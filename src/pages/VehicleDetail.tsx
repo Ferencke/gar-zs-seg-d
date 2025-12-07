@@ -13,15 +13,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { User, Calendar, Gauge, Plus, Trash2, Edit, Wrench } from 'lucide-react';
+import { User, Calendar, Gauge, Plus, Trash2, Edit, Wrench, Share2, AlertTriangle, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export default function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getVehicle, updateVehicle, deleteVehicle } = useVehicles();
   const { getCustomer } = useCustomers();
-  const { serviceRecords, addServiceRecord, getServicesByVehicle } = useServiceRecords();
+  const { addServiceRecord, getServicesByVehicle } = useServiceRecords();
 
   const vehicle = getVehicle(id!);
   const customer = vehicle ? getCustomer(vehicle.customerId) : null;
@@ -32,7 +33,7 @@ export default function VehicleDetail() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isServiceOpen, setIsServiceOpen] = useState(false);
   const [editData, setEditData] = useState(vehicle || {
-    licensePlate: '', brand: '', model: '', year: undefined, vin: '', color: ''
+    licensePlate: '', brand: '', model: '', year: undefined, vin: '', color: '', technicalInspectionDate: ''
   });
   const [serviceData, setServiceData] = useState({
     description: '',
@@ -42,6 +43,59 @@ export default function VehicleDetail() {
     status: 'pending' as 'pending' | 'in-progress' | 'completed',
     notes: '',
   });
+
+  // Technical inspection warning
+  const getTechnicalInspectionStatus = () => {
+    if (!vehicle?.technicalInspectionDate) return null;
+    const inspectionDate = new Date(vehicle.technicalInspectionDate);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil((inspectionDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry < 0) return { type: 'expired', days: Math.abs(daysUntilExpiry) };
+    if (daysUntilExpiry <= 30) return { type: 'warning', days: daysUntilExpiry };
+    return { type: 'ok', days: daysUntilExpiry };
+  };
+
+  const inspectionStatus = getTechnicalInspectionStatus();
+
+  // Share service history
+  const handleShareServiceHistory = async () => {
+    if (!vehicle || !customer) return;
+
+    const serviceHistory = vehicleServices.map((s) => 
+      `${new Date(s.date).toLocaleDateString('hu-HU')} - ${s.description}${s.mileage ? ` (${s.mileage.toLocaleString()} km)` : ''}${s.cost ? ` - ${s.cost.toLocaleString()} Ft` : ''}`
+    ).join('\n');
+
+    const message = `🚗 Szerviz előzmények
+    
+Jármű: ${vehicle.brand} ${vehicle.model}
+Rendszám: ${vehicle.licensePlate}
+${vehicle.year ? `Évjárat: ${vehicle.year}` : ''}
+${vehicle.vin ? `Alvázszám: ${vehicle.vin}` : ''}
+
+📋 Elvégzett munkák:
+${serviceHistory || 'Nincs szerviz előzmény'}
+
+Összesen ${vehicleServices.length} szerviz bejegyzés
+Összes költség: ${vehicleServices.reduce((sum, s) => sum + (s.cost || 0), 0).toLocaleString()} Ft`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${vehicle.brand} ${vehicle.model} szerviz előzmények`,
+          text: message,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          await navigator.clipboard.writeText(message);
+          toast.success('Szerviz előzmények vágólapra másolva!');
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(message);
+      toast.success('Szerviz előzmények vágólapra másolva!');
+    }
+  };
 
   if (!vehicle) {
     return (
@@ -113,7 +167,7 @@ export default function VehicleDetail() {
                   <Edit className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="mx-4 max-w-md">
+              <DialogContent className="mx-4 max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Jármű szerkesztése</DialogTitle>
                 </DialogHeader>
@@ -165,6 +219,17 @@ export default function VehicleDetail() {
                       onChange={(e) => setEditData({ ...editData, vin: e.target.value })}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      Műszaki érvényesség
+                    </Label>
+                    <Input
+                      type="date"
+                      value={editData.technicalInspectionDate || ''}
+                      onChange={(e) => setEditData({ ...editData, technicalInspectionDate: e.target.value })}
+                    />
+                  </div>
                   <Button type="submit" className="w-full">Mentés</Button>
                 </form>
               </DialogContent>
@@ -195,6 +260,32 @@ export default function VehicleDetail() {
       />
       <PageContainer>
         <div className="p-4 space-y-4 animate-fade-in">
+          {/* Technical Inspection Warning */}
+          {inspectionStatus && inspectionStatus.type !== 'ok' && (
+            <Card className={cn(
+              'border-2',
+              inspectionStatus.type === 'expired' ? 'border-destructive bg-destructive/5' : 'border-warning bg-warning/5'
+            )}>
+              <CardContent className="p-4 flex items-center gap-3">
+                <AlertTriangle className={cn(
+                  'h-6 w-6 shrink-0',
+                  inspectionStatus.type === 'expired' ? 'text-destructive' : 'text-warning'
+                )} />
+                <div>
+                  <p className="font-medium">
+                    {inspectionStatus.type === 'expired' 
+                      ? `Műszaki vizsga lejárt ${inspectionStatus.days} napja!`
+                      : `Műszaki vizsga ${inspectionStatus.days} nap múlva lejár!`
+                    }
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Érvényesség: {new Date(vehicle.technicalInspectionDate!).toLocaleDateString('hu-HU')}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Vehicle Info */}
           <Card>
             <CardContent className="p-4 space-y-3">
@@ -223,6 +314,20 @@ export default function VehicleDetail() {
                   <span className="font-mono text-xs">{vehicle.vin}</span>
                 </div>
               )}
+              {vehicle.technicalInspectionDate && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Shield className="h-3 w-3" />
+                    Műszaki érvényes
+                  </span>
+                  <span className={cn(
+                    inspectionStatus?.type === 'expired' && 'text-destructive',
+                    inspectionStatus?.type === 'warning' && 'text-warning'
+                  )}>
+                    {new Date(vehicle.technicalInspectionDate).toLocaleDateString('hu-HU')}
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -230,87 +335,95 @@ export default function VehicleDetail() {
           <Card>
             <CardHeader className="pb-3 flex-row items-center justify-between">
               <CardTitle className="text-base">Szerviz előzmények</CardTitle>
-              <Dialog open={isServiceOpen} onOpenChange={setIsServiceOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline" className="h-8">
-                    <Plus className="h-3 w-3 mr-1" />
-                    Új
+              <div className="flex gap-2">
+                {vehicleServices.length > 0 && (
+                  <Button size="sm" variant="outline" className="h-8" onClick={handleShareServiceHistory}>
+                    <Share2 className="h-3 w-3 mr-1" />
+                    Küldés
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="mx-4 max-w-md max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Új szerviz bejegyzés</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleAddService} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Leírás *</Label>
-                      <Input
-                        value={serviceData.description}
-                        onChange={(e) => setServiceData({ ...serviceData, description: e.target.value })}
-                        placeholder="Olajcsere, fékbetét..."
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
+                )}
+                <Dialog open={isServiceOpen} onOpenChange={setIsServiceOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="h-8">
+                      <Plus className="h-3 w-3 mr-1" />
+                      Új
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="mx-4 max-w-md max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Új szerviz bejegyzés</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleAddService} className="space-y-4">
                       <div className="space-y-2">
-                        <Label>Dátum *</Label>
+                        <Label>Leírás *</Label>
                         <Input
-                          type="date"
-                          value={serviceData.date}
-                          onChange={(e) => setServiceData({ ...serviceData, date: e.target.value })}
+                          value={serviceData.description}
+                          onChange={(e) => setServiceData({ ...serviceData, description: e.target.value })}
+                          placeholder="Olajcsere, fékbetét..."
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Státusz</Label>
-                        <Select
-                          value={serviceData.status}
-                          onValueChange={(value: 'pending' | 'in-progress' | 'completed') =>
-                            setServiceData({ ...serviceData, status: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Függőben</SelectItem>
-                            <SelectItem value="in-progress">Folyamatban</SelectItem>
-                            <SelectItem value="completed">Kész</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>Dátum *</Label>
+                          <Input
+                            type="date"
+                            value={serviceData.date}
+                            onChange={(e) => setServiceData({ ...serviceData, date: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Státusz</Label>
+                          <Select
+                            value={serviceData.status}
+                            onValueChange={(value: 'pending' | 'in-progress' | 'completed') =>
+                              setServiceData({ ...serviceData, status: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Függőben</SelectItem>
+                              <SelectItem value="in-progress">Folyamatban</SelectItem>
+                              <SelectItem value="completed">Kész</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>Kilométer</Label>
+                          <Input
+                            type="number"
+                            value={serviceData.mileage}
+                            onChange={(e) => setServiceData({ ...serviceData, mileage: e.target.value })}
+                            placeholder="125000"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Költség (Ft)</Label>
+                          <Input
+                            type="number"
+                            value={serviceData.cost}
+                            onChange={(e) => setServiceData({ ...serviceData, cost: e.target.value })}
+                            placeholder="25000"
+                          />
+                        </div>
+                      </div>
                       <div className="space-y-2">
-                        <Label>Kilométer</Label>
-                        <Input
-                          type="number"
-                          value={serviceData.mileage}
-                          onChange={(e) => setServiceData({ ...serviceData, mileage: e.target.value })}
-                          placeholder="125000"
+                        <Label>Megjegyzések</Label>
+                        <Textarea
+                          value={serviceData.notes}
+                          onChange={(e) => setServiceData({ ...serviceData, notes: e.target.value })}
+                          placeholder="További részletek..."
+                          rows={3}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Költség (Ft)</Label>
-                        <Input
-                          type="number"
-                          value={serviceData.cost}
-                          onChange={(e) => setServiceData({ ...serviceData, cost: e.target.value })}
-                          placeholder="25000"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Megjegyzések</Label>
-                      <Textarea
-                        value={serviceData.notes}
-                        onChange={(e) => setServiceData({ ...serviceData, notes: e.target.value })}
-                        placeholder="További részletek..."
-                        rows={3}
-                      />
-                    </div>
-                    <Button type="submit" className="w-full">Mentés</Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
+                      <Button type="submit" className="w-full">Mentés</Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent className="pt-0">
               {vehicleServices.length === 0 ? (

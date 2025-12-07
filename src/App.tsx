@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { BottomNav } from "@/components/layout/BottomNav";
 import Dashboard from "@/pages/Dashboard";
 import Customers from "@/pages/Customers";
@@ -10,6 +10,7 @@ import Vehicles from "@/pages/Vehicles";
 import VehicleDetail from "@/pages/VehicleDetail";
 import Services from "@/pages/Services";
 import ServiceDetail from "@/pages/ServiceDetail";
+import Appointments from "@/pages/Appointments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,7 +19,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster position="top-center" />
-      <BrowserRouter>
+      <HashRouter>
         <div className="min-h-screen bg-background flex flex-col">
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -28,11 +29,12 @@ const App = () => (
             <Route path="/vehicles/:id" element={<VehicleDetail />} />
             <Route path="/services" element={<Services />} />
             <Route path="/services/:id" element={<ServiceDetail />} />
+            <Route path="/appointments" element={<Appointments />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />
         </div>
-      </BrowserRouter>
+      </HashRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
