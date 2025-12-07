@@ -16,6 +16,7 @@ export interface Vehicle {
   year?: number;
   vin?: string;
   color?: string;
+  technicalInspectionDate?: string; // Műszaki vizsga érvényessége
   createdAt: string;
 }
 
@@ -29,5 +30,19 @@ export interface ServiceRecord {
   cost?: number;
   status: 'pending' | 'in-progress' | 'completed';
   notes?: string;
+  createdAt: string;
+}
+
+export interface Appointment {
+  id: string;
+  customerId: string;
+  vehicleId?: string;
+  customerName: string;
+  vehicleInfo?: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  description: string;
+  notes?: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
   createdAt: string;
 }

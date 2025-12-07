@@ -1,9 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Users, Car, Wrench, LayoutDashboard } from 'lucide-react';
+import { Users, Car, Wrench, LayoutDashboard, CalendarClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Áttekintés' },
+  { path: '/appointments', icon: CalendarClock, label: 'Előjegyzés' },
   { path: '/customers', icon: Users, label: 'Ügyfelek' },
   { path: '/vehicles', icon: Car, label: 'Autók' },
   { path: '/services', icon: Wrench, label: 'Szerviz' },
@@ -30,7 +31,7 @@ export function BottomNav() {
               )}
             >
               <item.icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className="text-[10px] font-medium">{item.label}</span>
             </button>
           );
         })}
