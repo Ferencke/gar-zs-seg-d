@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { User, Calendar, Gauge, Plus, Trash2, Edit, Wrench, Share2, AlertTriangle, Shield } from 'lucide-react';
+import { User, Calendar, Gauge, Plus, Trash2, Edit, Wrench, Share2, AlertTriangle, Shield, Fuel, Zap, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -33,7 +33,9 @@ export default function VehicleDetail() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isServiceOpen, setIsServiceOpen] = useState(false);
   const [editData, setEditData] = useState(vehicle || {
-    licensePlate: '', brand: '', model: '', year: undefined, vin: '', color: '', technicalInspectionDate: ''
+    licensePlate: '', brand: '', model: '', year: undefined, vin: '', color: '', 
+    technicalInspectionDate: '', engineCode: '', ecuType: '', displacement: undefined,
+    power: undefined, fuelType: ''
   });
   const [serviceData, setServiceData] = useState({
     description: '',
@@ -72,6 +74,10 @@ Jármű: ${vehicle.brand} ${vehicle.model}
 Rendszám: ${vehicle.licensePlate}
 ${vehicle.year ? `Évjárat: ${vehicle.year}` : ''}
 ${vehicle.vin ? `Alvázszám: ${vehicle.vin}` : ''}
+${vehicle.engineCode ? `Motorkód: ${vehicle.engineCode}` : ''}
+${vehicle.displacement ? `Hengerűrtartalom: ${vehicle.displacement} cm³` : ''}
+${vehicle.power ? `Teljesítmény: ${vehicle.power} kW` : ''}
+${vehicle.fuelType ? `Üzemanyag: ${vehicle.fuelType}` : ''}
 
 📋 Elvégzett munkák:
 ${serviceHistory || 'Nincs szerviz előzmény'}
@@ -115,6 +121,8 @@ ${serviceHistory || 'Nincs szerviz előzmény'}
     updateVehicle(id!, {
       ...editData,
       year: editData.year ? Number(editData.year) : undefined,
+      displacement: editData.displacement ? Number(editData.displacement) : undefined,
+      power: editData.power ? Number(editData.power) : undefined,
     });
     toast.success('Jármű frissítve!');
     setIsEditOpen(false);
@@ -219,6 +227,59 @@ ${serviceHistory || 'Nincs szerviz előzmény'}
                       onChange={(e) => setEditData({ ...editData, vin: e.target.value })}
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Motorkód</Label>
+                      <Input
+                        value={editData.engineCode || ''}
+                        onChange={(e) => setEditData({ ...editData, engineCode: e.target.value })}
+                        placeholder="BKD, AGR..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Motorvezérlő</Label>
+                      <Input
+                        value={editData.ecuType || ''}
+                        onChange={(e) => setEditData({ ...editData, ecuType: e.target.value })}
+                        placeholder="EDC16, MED17..."
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Hengerűrt. (cm³)</Label>
+                      <Input
+                        type="number"
+                        value={editData.displacement || ''}
+                        onChange={(e) => setEditData({ ...editData, displacement: e.target.value ? parseInt(e.target.value) : undefined })}
+                        placeholder="1968"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Teljesítmény (kW)</Label>
+                      <Input
+                        type="number"
+                        value={editData.power || ''}
+                        onChange={(e) => setEditData({ ...editData, power: e.target.value ? parseInt(e.target.value) : undefined })}
+                        placeholder="103"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Üzemanyag</Label>
+                    <Select value={editData.fuelType || ''} onValueChange={(v) => setEditData({ ...editData, fuelType: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Válassz..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="benzin">Benzin</SelectItem>
+                        <SelectItem value="diesel">Dízel</SelectItem>
+                        <SelectItem value="lpg">LPG</SelectItem>
+                        <SelectItem value="hybrid">Hibrid</SelectItem>
+                        <SelectItem value="electric">Elektromos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1">
                       <Shield className="h-3 w-3" />
@@ -302,14 +363,55 @@ ${serviceHistory || 'Nincs szerviz előzmény'}
                   <span className="text-primary">{customer.name}</span>
                 </div>
               )}
-              {vehicle.color && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Szín</span>
-                  <span>{vehicle.color}</span>
-                </div>
-              )}
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {vehicle.color && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Szín</span>
+                    <span>{vehicle.color}</span>
+                  </div>
+                )}
+                {vehicle.fuelType && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Fuel className="h-3 w-3" />
+                      Üzemanyag
+                    </span>
+                    <span className="capitalize">{vehicle.fuelType}</span>
+                  </div>
+                )}
+                {vehicle.engineCode && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Motorkód</span>
+                    <span className="font-mono">{vehicle.engineCode}</span>
+                  </div>
+                )}
+                {vehicle.ecuType && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Settings className="h-3 w-3" />
+                      ECU
+                    </span>
+                    <span className="font-mono text-xs">{vehicle.ecuType}</span>
+                  </div>
+                )}
+                {vehicle.displacement && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Hengerűrt.</span>
+                    <span>{vehicle.displacement.toLocaleString()} cm³</span>
+                  </div>
+                )}
+                {vehicle.power && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Zap className="h-3 w-3" />
+                      Teljesítmény
+                    </span>
+                    <span>{vehicle.power} kW ({Math.round(vehicle.power * 1.36)} LE)</span>
+                  </div>
+                )}
+              </div>
               {vehicle.vin && (
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm pt-2 border-t border-border">
                   <span className="text-muted-foreground">Alvázszám</span>
                   <span className="font-mono text-xs">{vehicle.vin}</span>
                 </div>
@@ -427,24 +529,22 @@ ${serviceHistory || 'Nincs szerviz előzmény'}
             </CardHeader>
             <CardContent className="pt-0">
               {vehicleServices.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Még nincs szerviz előzmény
-                </p>
+                <div className="text-center py-6 text-muted-foreground">
+                  <Wrench className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Még nincs szerviz előzmény</p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {vehicleServices.map((service) => (
                     <div
                       key={service.id}
-                      className="p-3 bg-secondary/50 rounded-lg cursor-pointer hover:bg-secondary transition-colors"
+                      className="p-3 bg-secondary/30 rounded-lg cursor-pointer hover:bg-secondary/50 transition-colors"
                       onClick={() => navigate(`/services/${service.id}`)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Wrench className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <p className="font-medium truncate">{service.description}</p>
-                          </div>
-                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                          <p className="font-medium truncate">{service.description}</p>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {new Date(service.date).toLocaleDateString('hu-HU')}
@@ -459,7 +559,7 @@ ${serviceHistory || 'Nincs szerviz előzmény'}
                         </div>
                         <div className="flex flex-col items-end gap-1">
                           <span
-                            className={`text-xs px-2 py-1 rounded-full ${
+                            className={`text-xs px-2 py-0.5 rounded-full ${
                               service.status === 'completed'
                                 ? 'bg-success/10 text-success'
                                 : service.status === 'in-progress'

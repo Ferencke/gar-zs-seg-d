@@ -16,8 +16,22 @@ export interface Vehicle {
   year?: number;
   vin?: string;
   color?: string;
-  technicalInspectionDate?: string; // Műszaki vizsga érvényessége
+  technicalInspectionDate?: string;
+  // New fields
+  engineCode?: string;
+  ecuType?: string;
+  displacement?: number; // cm³
+  power?: number; // kW or HP
+  fuelType?: string;
   createdAt: string;
+}
+
+export interface Part {
+  id: string;
+  name: string;
+  partNumber?: string;
+  quantity: number;
+  price?: number;
 }
 
 export interface ServiceRecord {
@@ -30,6 +44,10 @@ export interface ServiceRecord {
   cost?: number;
   status: 'pending' | 'in-progress' | 'completed';
   notes?: string;
+  parts?: Part[];
+  photos?: string[];
+  laborHours?: number;
+  location?: string;
   createdAt: string;
 }
 
@@ -38,6 +56,9 @@ export interface Appointment {
   customerId: string;
   vehicleId?: string;
   customerName: string;
+  vehicleBrand?: string;
+  vehicleModel?: string;
+  vehicleLicensePlate?: string;
   vehicleInfo?: string;
   scheduledDate: string;
   scheduledTime: string;
