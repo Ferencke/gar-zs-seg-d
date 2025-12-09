@@ -11,6 +11,8 @@ import VehicleDetail from "@/pages/VehicleDetail";
 import Services from "@/pages/Services";
 import ServiceDetail from "@/pages/ServiceDetail";
 import Appointments from "@/pages/Appointments";
+import Statistics from "@/pages/Statistics";
+import DataManagement from "@/pages/DataManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ const App = () => (
             <Route path="/services" element={<Services />} />
             <Route path="/services/:id" element={<ServiceDetail />} />
             <Route path="/appointments" element={<Appointments />} />
+            <Route path="/statistics" element={<Statistics />} />
+            <Route path="/data" element={<DataManagement />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />
