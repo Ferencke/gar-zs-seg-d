@@ -6,9 +6,9 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Calendar, Car, ChevronRight } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SearchFilter } from '@/components/SearchFilter';
+import { Calendar, Car, ChevronRight, User } from 'lucide-react';
 
 export default function Services() {
   const { serviceRecords } = useServiceRecords();
@@ -21,9 +21,12 @@ export default function Services() {
   const filteredServices = serviceRecords
     .filter((service) => {
       const vehicle = getVehicle(service.vehicleId);
+      const customer = getCustomer(service.customerId);
       const matchesSearch =
         service.description.toLowerCase().includes(search.toLowerCase()) ||
-        vehicle?.licensePlate.toLowerCase().includes(search.toLowerCase());
+        (vehicle?.licensePlate && vehicle.licensePlate.toLowerCase().includes(search.toLowerCase())) ||
+        (vehicle?.brand && vehicle.brand.toLowerCase().includes(search.toLowerCase())) ||
+        (customer?.name && customer.name.toLowerCase().includes(search.toLowerCase()));
       const matchesStatus = statusFilter === 'all' || service.status === statusFilter;
       return matchesSearch && matchesStatus;
     })
@@ -35,15 +38,11 @@ export default function Services() {
       <PageContainer>
         <div className="p-4 space-y-4 animate-fade-in">
           {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Keresés..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <SearchFilter
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Keresés leírás, rendszám, ügyfél..."
+          />
 
           {/* Status Tabs */}
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
@@ -54,6 +53,11 @@ export default function Services() {
               <TabsTrigger value="completed" className="text-xs">Kész</TabsTrigger>
             </TabsList>
           </Tabs>
+
+          {/* Results count */}
+          <p className="text-xs text-muted-foreground">
+            {filteredServices.length} szerviz{(search || statusFilter !== 'all') && ` (szűrve)`}
+          </p>
 
           {/* Service List */}
           <div className="space-y-2">
@@ -79,11 +83,11 @@ export default function Services() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{service.description}</p>
-                          <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
                             {vehicle && (
                               <span className="flex items-center gap-1">
                                 <Car className="h-3 w-3" />
-                                {vehicle.licensePlate}
+                                {vehicle.brand} {vehicle.model} ({vehicle.licensePlate})
                               </span>
                             )}
                             <span className="flex items-center gap-1">
@@ -92,7 +96,8 @@ export default function Services() {
                             </span>
                           </div>
                           {customer && (
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                              <User className="h-3 w-3" />
                               {customer.name}
                             </p>
                           )}

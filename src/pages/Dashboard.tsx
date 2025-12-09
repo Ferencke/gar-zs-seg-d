@@ -5,9 +5,13 @@ import { useAppointments } from '@/hooks/useAppointments';
 import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Car, Wrench, CalendarClock, AlertTriangle, Clock } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { NotificationBell } from '@/components/NotificationBell';
+import { QuickActions } from '@/components/QuickActions';
+import { Users, Car, Wrench, CalendarClock, AlertTriangle, Clock, TrendingUp, DollarSign, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 
 export default function Dashboard() {
   const { customers } = useCustomers();
@@ -19,6 +23,51 @@ export default function Dashboard() {
   const inProgressServices = serviceRecords.filter((s) => s.status === 'in-progress').length;
   const todayAppointments = getTodayAppointments();
   const upcomingAppointments = getUpcomingAppointments().slice(0, 3);
+
+  // KPI számítások
+  const kpiData = useMemo(() => {
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    
+    // Havi bevétel
+    const monthlyRevenue = serviceRecords
+      .filter((s) => {
+        const date = new Date(s.date);
+        return date.getMonth() === thisMonth && date.getFullYear() === thisYear && s.status === 'completed';
+      })
+      .reduce((sum, s) => sum + (s.cost || 0), 0);
+
+    // Előző havi bevétel (összehasonlításhoz)
+    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+    const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+    const lastMonthRevenue = serviceRecords
+      .filter((s) => {
+        const date = new Date(s.date);
+        return date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear && s.status === 'completed';
+      })
+      .reduce((sum, s) => sum + (s.cost || 0), 0);
+
+    const revenueChange = lastMonthRevenue > 0 
+      ? Math.round(((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100) 
+      : 0;
+
+    // Havi befejezett szervizek
+    const monthlyCompleted = serviceRecords.filter((s) => {
+      const date = new Date(s.date);
+      return date.getMonth() === thisMonth && date.getFullYear() === thisYear && s.status === 'completed';
+    }).length;
+
+    // Átlagos szerviz érték
+    const avgServiceValue = monthlyCompleted > 0 ? Math.round(monthlyRevenue / monthlyCompleted) : 0;
+
+    return {
+      monthlyRevenue,
+      revenueChange,
+      monthlyCompleted,
+      avgServiceValue,
+    };
+  }, [serviceRecords]);
 
   // Vehicles with expiring inspection (within 30 days)
   const expiringVehicles = vehicles.filter((v) => {
@@ -36,9 +85,50 @@ export default function Dashboard() {
 
   return (
     <>
-      <Header title="Autószerviz Kezelő" />
+      <Header 
+        title="Autószerviz Kezelő" 
+        action={
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <ThemeToggle />
+          </div>
+        }
+      />
       <PageContainer>
         <div className="p-4 space-y-6 animate-fade-in">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  {kpiData.revenueChange !== 0 && (
+                    <span className={cn(
+                      'text-xs font-medium flex items-center gap-0.5',
+                      kpiData.revenueChange > 0 ? 'text-success' : 'text-destructive'
+                    )}>
+                      <TrendingUp className={cn('h-3 w-3', kpiData.revenueChange < 0 && 'rotate-180')} />
+                      {Math.abs(kpiData.revenueChange)}%
+                    </span>
+                  )}
+                </div>
+                <p className="text-2xl font-bold mt-2">{kpiData.monthlyRevenue.toLocaleString('hu-HU')} Ft</p>
+                <p className="text-xs text-muted-foreground">Havi bevétel</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <Wrench className="h-5 w-5 text-success" />
+                </div>
+                <p className="text-2xl font-bold mt-2">{kpiData.monthlyCompleted}</p>
+                <p className="text-xs text-muted-foreground">Havi szerviz</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Stats */}
           <div className="grid grid-cols-2 gap-3">
             {stats.map((stat) => (
               <Card key={stat.title} className="cursor-pointer hover:shadow-md transition-shadow" onClick={stat.onClick}>
@@ -96,6 +186,8 @@ export default function Dashboard() {
             </Card>
           )}
         </div>
+        
+        <QuickActions />
       </PageContainer>
     </>
   );
