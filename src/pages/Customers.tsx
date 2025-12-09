@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Phone, Mail, ChevronRight } from 'lucide-react';
+import { SearchFilter } from '@/components/SearchFilter';
+import { Plus, Phone, Mail, ChevronRight, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Customers() {
@@ -16,6 +17,7 @@ export default function Customers() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [sortFilter, setSortFilter] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -23,11 +25,18 @@ export default function Customers() {
     address: '',
   });
 
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(search.toLowerCase()) ||
-      customer.phone.includes(search)
-  );
+  const filteredCustomers = customers
+    .filter(
+      (customer) =>
+        customer.name.toLowerCase().includes(search.toLowerCase()) ||
+        customer.phone.includes(search) ||
+        (customer.email && customer.email.toLowerCase().includes(search.toLowerCase()))
+    )
+    .sort((a, b) => {
+      if (sortFilter.includes('name-asc')) return a.name.localeCompare(b.name);
+      if (sortFilter.includes('name-desc')) return b.name.localeCompare(a.name);
+      return 0;
+    });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +48,12 @@ export default function Customers() {
     toast.success('Ügyfél hozzáadva!');
     setFormData({ name: '', phone: '', email: '', address: '' });
     setIsOpen(false);
+  };
+
+  const toggleSortFilter = (id: string) => {
+    setSortFilter((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [id]
+    );
   };
 
   return (
@@ -105,16 +120,28 @@ export default function Customers() {
       />
       <PageContainer>
         <div className="p-4 space-y-4 animate-fade-in">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Keresés..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          {/* Search and Filters */}
+          <SearchFilter
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Keresés név, telefon, email..."
+            filters={[
+              {
+                label: 'Rendezés',
+                options: [
+                  { id: 'name-asc', label: 'Név (A-Z)' },
+                  { id: 'name-desc', label: 'Név (Z-A)' },
+                ],
+                selected: sortFilter,
+                onToggle: toggleSortFilter,
+              },
+            ]}
+          />
+
+          {/* Results count */}
+          <p className="text-xs text-muted-foreground">
+            {filteredCustomers.length} ügyfél{search && ` (szűrve)`}
+          </p>
 
           {/* Customer List */}
           <div className="space-y-2">
@@ -135,7 +162,7 @@ export default function Customers() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium truncate">{customer.name}</h3>
-                        <div className="flex items-center gap-4 mt-1">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
                           <span className="text-sm text-muted-foreground flex items-center gap-1">
                             <Phone className="h-3 w-3" />
                             {customer.phone}
@@ -146,9 +173,15 @@ export default function Customers() {
                               {customer.email}
                             </span>
                           )}
+                          {customer.address && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {customer.address}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
                     </div>
                   </CardContent>
                 </Card>

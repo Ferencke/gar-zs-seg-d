@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SearchFilter } from '@/components/SearchFilter';
 import { Plus, Calendar, Clock, Car, User, Trash2, Check, X, ChevronLeft, ChevronRight, Edit, List, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,8 @@ export default function Appointments() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     vehicleId: '',
     scheduledDate: new Date().toISOString().split('T')[0],
@@ -39,8 +42,26 @@ export default function Appointments() {
     notes: '',
   });
 
-  const upcomingAppointments = getUpcomingAppointments();
-  const pastAppointments = appointments
+  // Filter appointments based on search and status
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter((apt) => {
+      const matchesSearch = search === '' ||
+        apt.description.toLowerCase().includes(search.toLowerCase()) ||
+        apt.customerName.toLowerCase().includes(search.toLowerCase()) ||
+        (apt.vehicleLicensePlate && apt.vehicleLicensePlate.toLowerCase().includes(search.toLowerCase())) ||
+        (apt.vehicleBrand && apt.vehicleBrand.toLowerCase().includes(search.toLowerCase()));
+
+      const matchesStatus = statusFilter.length === 0 || statusFilter.includes(apt.status);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [appointments, search, statusFilter]);
+
+  const upcomingAppointments = filteredAppointments
+    .filter((a) => a.status === 'scheduled' && new Date(a.scheduledDate) >= new Date(new Date().setHours(0, 0, 0, 0)))
+    .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
+  
+  const pastAppointments = filteredAppointments
     .filter((a) => a.status !== 'scheduled' || new Date(a.scheduledDate) < new Date(new Date().setHours(0, 0, 0, 0)))
     .sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime())
     .slice(0, 10);
@@ -356,6 +377,27 @@ export default function Appointments() {
       />
       <PageContainer>
         <div className="p-4 space-y-4 animate-fade-in">
+          {/* Search and Filters */}
+          <SearchFilter
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Keresés ügyfél, rendszám, leírás..."
+            filters={[
+              {
+                label: 'Státusz',
+                options: [
+                  { id: 'scheduled', label: 'Tervezett' },
+                  { id: 'completed', label: 'Teljesítve' },
+                  { id: 'cancelled', label: 'Lemondva' },
+                ],
+                selected: statusFilter,
+                onToggle: (id) => setStatusFilter((prev) =>
+                  prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+                ),
+              },
+            ]}
+          />
+
           {/* View Mode Tabs */}
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
             <TabsList className="w-full grid grid-cols-3">
