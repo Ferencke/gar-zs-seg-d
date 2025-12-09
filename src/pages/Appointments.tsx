@@ -278,19 +278,25 @@ export default function Appointments() {
     </form>
   );
 
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
   const renderCalendarDay = (date: Date | null, isCompact = false) => {
     if (!date) return <div className="aspect-square" />;
     
     const dayAppointments = getAppointmentsForDate(date);
     const isToday = date.toDateString() === new Date().toDateString();
     const isPast = date < today;
+    const isSelected = selectedDate?.toDateString() === date.toDateString();
     
     return (
       <div 
+        onClick={() => dayAppointments.length > 0 && setSelectedDate(isSelected ? null : date)}
         className={cn(
-          'aspect-square p-1 border border-border rounded-md flex flex-col',
+          'aspect-square p-1 border border-border rounded-md flex flex-col cursor-pointer transition-colors',
           isToday && 'bg-primary/10 border-primary',
-          isPast && 'opacity-50'
+          isPast && 'opacity-50',
+          isSelected && 'ring-2 ring-primary',
+          dayAppointments.length > 0 && 'hover:bg-secondary/50'
         )}
       >
         <span className={cn(
@@ -402,6 +408,42 @@ export default function Appointments() {
                         <div key={i}>{renderCalendarDay(date, true)}</div>
                       ))}
                     </div>
+                    
+                    {/* Selected Day Details */}
+                    {selectedDate && (
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-medium text-sm">
+                            {selectedDate.toLocaleDateString('hu-HU', { month: 'long', day: 'numeric', weekday: 'long' })}
+                          </h3>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setSelectedDate(null)}>
+                            Bezár
+                          </Button>
+                        </div>
+                        <div className="space-y-2">
+                          {getAppointmentsForDate(selectedDate).map((apt) => (
+                            <div key={apt.id} className="text-sm flex items-start gap-2 bg-secondary/50 p-2 rounded">
+                              <span className="text-muted-foreground shrink-0">{apt.scheduledTime}</span>
+                              <div className="flex-1 min-w-0">
+                                <span className="font-medium">{apt.vehicleBrand} {apt.vehicleModel}</span>
+                                {apt.vehicleLicensePlate && (
+                                  <span className="text-muted-foreground ml-1">({apt.vehicleLicensePlate})</span>
+                                )}
+                                <p className="text-xs text-muted-foreground truncate">{apt.description}</p>
+                              </div>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 shrink-0"
+                                onClick={() => openEditDialog(apt)}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -431,12 +473,25 @@ export default function Appointments() {
                           {dayAppointments.length > 0 ? (
                             <div className="space-y-1">
                               {dayAppointments.map((apt) => (
-                                <div key={apt.id} className="text-xs flex items-center gap-2 bg-secondary/50 p-1.5 rounded">
-                                  <span className="text-muted-foreground">{apt.scheduledTime}</span>
-                                  <span className="font-medium">{apt.vehicleBrand} {apt.vehicleModel}</span>
-                                  {apt.vehicleLicensePlate && (
-                                    <span className="text-muted-foreground">({apt.vehicleLicensePlate})</span>
-                                  )}
+                                <div key={apt.id} className="text-xs flex items-start gap-2 bg-secondary/50 p-1.5 rounded">
+                                  <span className="text-muted-foreground shrink-0">{apt.scheduledTime}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      <span className="font-medium">{apt.vehicleBrand} {apt.vehicleModel}</span>
+                                      {apt.vehicleLicensePlate && (
+                                        <span className="text-muted-foreground">({apt.vehicleLicensePlate})</span>
+                                      )}
+                                    </div>
+                                    <p className="text-muted-foreground truncate">{apt.description}</p>
+                                  </div>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-6 w-6 shrink-0"
+                                    onClick={() => openEditDialog(apt)}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
                                 </div>
                               ))}
                             </div>
