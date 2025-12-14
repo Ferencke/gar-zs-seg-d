@@ -6,15 +6,12 @@ import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent } from '@/components/ui/card';
 import { SearchFilter } from '@/components/SearchFilter';
-import { ChevronRight, User, AlertTriangle } from 'lucide-react';
+import { ChevronRight, User, AlertTriangle, Car, Fuel, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
 export default function Vehicles() {
-  const {
-    vehicles
-  } = useVehicles();
-  const {
-    getCustomer
-  } = useCustomers();
+  const { vehicles } = useVehicles();
+  const { getCustomer } = useCustomers();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [brandFilter, setBrandFilter] = useState<string[]>([]);
@@ -22,44 +19,97 @@ export default function Vehicles() {
 
   // Get unique brands for filter
   const uniqueBrands = [...new Set(vehicles.map(v => v.brand))].sort();
+  
   const filteredVehicles = vehicles.filter(vehicle => {
-    const matchesSearch = vehicle.licensePlate.toLowerCase().includes(search.toLowerCase()) || vehicle.brand.toLowerCase().includes(search.toLowerCase()) || vehicle.model.toLowerCase().includes(search.toLowerCase()) || vehicle.vin && vehicle.vin.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = vehicle.licensePlate.toLowerCase().includes(search.toLowerCase()) || 
+      vehicle.brand.toLowerCase().includes(search.toLowerCase()) || 
+      vehicle.model.toLowerCase().includes(search.toLowerCase()) || 
+      (vehicle.vin && vehicle.vin.toLowerCase().includes(search.toLowerCase()));
     const matchesBrand = brandFilter.length === 0 || brandFilter.includes(vehicle.brand);
-    const hasExpiring = vehicle.technicalInspectionDate && Math.ceil((new Date(vehicle.technicalInspectionDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 30;
-    const matchesStatus = statusFilter.length === 0 || statusFilter.includes('expiring') && hasExpiring || statusFilter.includes('ok') && !hasExpiring;
+    const hasExpiring = vehicle.technicalInspectionDate && 
+      Math.ceil((new Date(vehicle.technicalInspectionDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 30;
+    const matchesStatus = statusFilter.length === 0 || 
+      (statusFilter.includes('expiring') && hasExpiring) || 
+      (statusFilter.includes('ok') && !hasExpiring);
     return matchesSearch && matchesBrand && matchesStatus;
   });
+
   const toggleBrandFilter = (brand: string) => {
     setBrandFilter(prev => prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]);
   };
+
   const toggleStatusFilter = (status: string) => {
     setStatusFilter(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
   };
-  return <>
+
+  // Stats
+  const totalVehicles = vehicles.length;
+  const expiringCount = vehicles.filter(v => 
+    v.technicalInspectionDate && 
+    Math.ceil((new Date(v.technicalInspectionDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 30
+  ).length;
+
+  return (
+    <>
       <Header title="Autók" />
       <PageContainer>
         <div className="p-4 space-y-4 animate-fade-in">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <Car className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-primary">{totalVehicles}</p>
+                    <p className="text-xs text-muted-foreground">Összes autó</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-warning/10 via-warning/5 to-transparent border-warning/20">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-warning/20">
+                    <AlertTriangle className="h-4 w-4 text-warning" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-warning">{expiringCount}</p>
+                    <p className="text-xs text-muted-foreground">Lejáró műszaki</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Search and Filters */}
-          <SearchFilter search={search} onSearchChange={setSearch} placeholder="Keresés rendszám, márka, modell, alvázszám..." filters={[{
-          label: 'Márka',
-          options: uniqueBrands.slice(0, 4).map(brand => ({
-            id: brand,
-            label: brand
-          })),
-          selected: brandFilter,
-          onToggle: toggleBrandFilter
-        }, {
-          label: 'Státusz',
-          options: [{
-            id: 'expiring',
-            label: 'Lejáró műszaki'
-          }, {
-            id: 'ok',
-            label: 'Rendben'
-          }],
-          selected: statusFilter,
-          onToggle: toggleStatusFilter
-        }]} />
+          <SearchFilter 
+            search={search} 
+            onSearchChange={setSearch} 
+            placeholder="Keresés rendszám, márka, modell, alvázszám..." 
+            filters={[
+              {
+                label: 'Márka',
+                options: uniqueBrands.slice(0, 4).map(brand => ({
+                  id: brand,
+                  label: brand
+                })),
+                selected: brandFilter,
+                onToggle: toggleBrandFilter
+              }, 
+              {
+                label: 'Státusz',
+                options: [
+                  { id: 'expiring', label: 'Lejáró műszaki' }, 
+                  { id: 'ok', label: 'Rendben' }
+                ],
+                selected: statusFilter,
+                onToggle: toggleStatusFilter
+              }
+            ]} 
+          />
 
           {/* Results count */}
           <p className="text-xs text-muted-foreground">
@@ -68,44 +118,91 @@ export default function Vehicles() {
 
           {/* Vehicle List */}
           <div className="space-y-2">
-            {filteredVehicles.length === 0 ? <Card>
+            {filteredVehicles.length === 0 ? (
+              <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
                   {search || brandFilter.length > 0 || statusFilter.length > 0 ? 'Nincs találat' : 'Még nincs jármű. Adj hozzá ügyfélnél!'}
                 </CardContent>
-              </Card> : filteredVehicles.map(vehicle => {
-            const customer = getCustomer(vehicle.customerId);
-            const hasExpiring = vehicle.technicalInspectionDate && Math.ceil((new Date(vehicle.technicalInspectionDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 30;
-            const daysUntilExpiry = vehicle.technicalInspectionDate ? Math.ceil((new Date(vehicle.technicalInspectionDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
-            return <Card key={vehicle.id} className={cn('cursor-pointer hover:shadow-md transition-shadow', hasExpiring && 'border-warning')} onClick={() => navigate(`/vehicles/${vehicle.id}`)}>
+              </Card>
+            ) : (
+              filteredVehicles.map(vehicle => {
+                const customer = getCustomer(vehicle.customerId);
+                const hasExpiring = vehicle.technicalInspectionDate && 
+                  Math.ceil((new Date(vehicle.technicalInspectionDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 30;
+                const daysUntilExpiry = vehicle.technicalInspectionDate 
+                  ? Math.ceil((new Date(vehicle.technicalInspectionDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) 
+                  : null;
+                
+                return (
+                  <Card 
+                    key={vehicle.id} 
+                    className={cn(
+                      'cursor-pointer hover:shadow-md transition-all hover:scale-[1.01]',
+                      hasExpiring 
+                        ? 'bg-gradient-to-br from-warning/10 via-warning/5 to-transparent border-warning/30' 
+                        : 'bg-gradient-to-br from-primary/5 via-transparent to-transparent border-border/50 hover:border-primary/30'
+                    )} 
+                    onClick={() => navigate(`/vehicles/${vehicle.id}`)}
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-primary">
+                            <div className={cn(
+                              'p-1.5 rounded-lg',
+                              hasExpiring ? 'bg-warning/20' : 'bg-primary/10'
+                            )}>
+                              <Car className={cn('h-4 w-4', hasExpiring ? 'text-warning' : 'text-primary')} />
+                            </div>
+                            <span className="font-mono font-bold text-foreground">
                               {vehicle.licensePlate}
                             </span>
-                            {hasExpiring && <span className={cn('text-xs px-1.5 py-0.5 rounded flex items-center gap-1', daysUntilExpiry !== null && daysUntilExpiry < 0 ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning')}>
+                            {hasExpiring && (
+                              <span className={cn(
+                                'text-xs px-1.5 py-0.5 rounded flex items-center gap-1',
+                                daysUntilExpiry !== null && daysUntilExpiry < 0 
+                                  ? 'bg-destructive/10 text-destructive' 
+                                  : 'bg-warning/10 text-warning'
+                              )}>
                                 <AlertTriangle className="h-3 w-3" />
                                 {daysUntilExpiry !== null && daysUntilExpiry < 0 ? 'Lejárt' : `${daysUntilExpiry} nap`}
-                              </span>}
+                              </span>
+                            )}
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-sm font-medium text-foreground mt-1.5">
                             {vehicle.brand} {vehicle.model}
-                            {vehicle.year && ` • ${vehicle.year}`}
-                            {vehicle.fuelType && ` • ${vehicle.fuelType}`}
                           </p>
-                          {customer && <p className="text-xs flex items-center gap-1 mt-1 text-destructive">
+                          <div className="flex flex-wrap gap-2 mt-1.5">
+                            {vehicle.year && (
+                              <span className="text-xs flex items-center gap-1 text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
+                                <Calendar className="h-3 w-3" />
+                                {vehicle.year}
+                              </span>
+                            )}
+                            {vehicle.fuelType && (
+                              <span className="text-xs flex items-center gap-1 text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
+                                <Fuel className="h-3 w-3" />
+                                {vehicle.fuelType}
+                              </span>
+                            )}
+                          </div>
+                          {customer && (
+                            <p className="text-xs flex items-center gap-1 mt-2 text-primary">
                               <User className="h-3 w-3" />
                               {customer.name}
-                            </p>}
+                            </p>
+                          )}
                         </div>
                         <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
                       </div>
                     </CardContent>
-                  </Card>;
-          })}
+                  </Card>
+                );
+              })
+            )}
           </div>
         </div>
       </PageContainer>
-    </>;
+    </>
+  );
 }

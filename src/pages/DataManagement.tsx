@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useServiceRecords } from '@/hooks/useServiceRecords';
@@ -8,7 +9,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Download, Upload, Database, AlertTriangle } from 'lucide-react';
+import { Download, Upload, Database, AlertTriangle, Building2, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExportData {
@@ -21,6 +22,7 @@ interface ExportData {
 }
 
 export default function DataManagement() {
+  const navigate = useNavigate();
   const { customers } = useCustomers();
   const { vehicles } = useVehicles();
   const { serviceRecords } = useServiceRecords();
@@ -140,6 +142,29 @@ export default function DataManagement() {
               <p className="text-xs text-muted-foreground mt-3 text-center">
                 Összesen <span className="font-semibold text-foreground">{totalRecords}</span> bejegyzés
               </p>
+            </CardContent>
+          </Card>
+
+          {/* Company Settings */}
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-all border-accent/20 hover:border-accent/40 bg-gradient-to-br from-accent/5 to-transparent"
+            onClick={() => navigate('/company')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-accent/20">
+                    <Building2 className="h-5 w-5 text-accent" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Céges adatok</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Szerkeszd a cég adatait (munkalapon, számlákon megjelenik)
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
             </CardContent>
           </Card>
 
