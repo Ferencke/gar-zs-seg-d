@@ -93,54 +93,54 @@ export default function Statistics() {
         <div className="p-4 space-y-4 animate-fade-in">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-3">
-            <Card>
+            <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-success/10">
+                  <div className="p-2 rounded-lg bg-success/20">
                     <DollarSign className="h-5 w-5 text-success" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Összes bevétel</p>
-                    <p className="text-lg font-bold">{stats.totalRevenue.toLocaleString()} Ft</p>
+                    <p className="text-lg font-bold text-success">{stats.totalRevenue.toLocaleString()} Ft</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
+                  <div className="p-2 rounded-lg bg-primary/20">
                     <TrendingUp className="h-5 w-5 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">E havi bevétel</p>
-                    <p className="text-lg font-bold">{stats.thisMonthRevenue.toLocaleString()} Ft</p>
+                    <p className="text-lg font-bold text-primary">{stats.thisMonthRevenue.toLocaleString()} Ft</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-warning/10">
+                  <div className="p-2 rounded-lg bg-warning/20">
                     <Wrench className="h-5 w-5 text-warning" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Összes szerviz</p>
-                    <p className="text-lg font-bold">{stats.totalServices}</p>
+                    <p className="text-lg font-bold text-warning">{stats.totalServices}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-secondary">
-                    <Car className="h-5 w-5 text-foreground" />
+                  <div className="p-2 rounded-lg bg-accent/20">
+                    <Car className="h-5 w-5 text-accent" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Járművek</p>
-                    <p className="text-lg font-bold">{stats.totalVehicles}</p>
+                    <p className="text-lg font-bold text-accent">{stats.totalVehicles}</p>
                   </div>
                 </div>
               </CardContent>
@@ -173,15 +173,18 @@ export default function Statistics() {
           </Card>
 
           {/* Top Repairs */}
-          <Card>
+          <Card className="border-primary/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Leggyakoribb javítások</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Wrench className="h-4 w-4 text-primary" />
+                Leggyakoribb javítások
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {stats.topRepairs.length > 0 ? (
                 <div className="space-y-2">
                   {stats.topRepairs.map((repair, i) => (
-                    <div key={i} className="flex items-center justify-between">
+                    <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-gradient-to-r from-primary/5 to-transparent">
                       <span className="text-sm truncate flex-1">{repair.name}</span>
                       <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-2">
                         {repair.count}x

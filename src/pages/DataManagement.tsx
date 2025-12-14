@@ -109,48 +109,53 @@ export default function DataManagement() {
       <PageContainer>
         <div className="p-4 space-y-4 animate-fade-in">
           {/* Data Summary */}
-          <Card>
+          <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <Database className="h-5 w-5" />
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Database className="h-5 w-5 text-primary" />
+                </div>
                 Adatok összegzése
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex justify-between p-2 bg-secondary/30 rounded">
+                <div className="flex justify-between p-3 bg-gradient-to-r from-primary/10 to-transparent rounded-lg border border-primary/10">
                   <span className="text-muted-foreground">Ügyfelek</span>
-                  <span className="font-medium">{customers.length}</span>
+                  <span className="font-bold text-primary">{customers.length}</span>
                 </div>
-                <div className="flex justify-between p-2 bg-secondary/30 rounded">
+                <div className="flex justify-between p-3 bg-gradient-to-r from-accent/10 to-transparent rounded-lg border border-accent/10">
                   <span className="text-muted-foreground">Járművek</span>
-                  <span className="font-medium">{vehicles.length}</span>
+                  <span className="font-bold text-accent">{vehicles.length}</span>
                 </div>
-                <div className="flex justify-between p-2 bg-secondary/30 rounded">
+                <div className="flex justify-between p-3 bg-gradient-to-r from-success/10 to-transparent rounded-lg border border-success/10">
                   <span className="text-muted-foreground">Szervizbejegyzések</span>
-                  <span className="font-medium">{serviceRecords.length}</span>
+                  <span className="font-bold text-success">{serviceRecords.length}</span>
                 </div>
-                <div className="flex justify-between p-2 bg-secondary/30 rounded">
+                <div className="flex justify-between p-3 bg-gradient-to-r from-warning/10 to-transparent rounded-lg border border-warning/10">
                   <span className="text-muted-foreground">Előjegyzések</span>
-                  <span className="font-medium">{appointments.length}</span>
+                  <span className="font-bold text-warning">{appointments.length}</span>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-3 text-center">
-                Összesen {totalRecords} bejegyzés
+                Összesen <span className="font-semibold text-foreground">{totalRecords}</span> bejegyzés
               </p>
             </CardContent>
           </Card>
 
           {/* Export */}
-          <Card>
+          <Card className="border-success/20 hover:border-success/40 transition-colors">
             <CardHeader>
-              <CardTitle className="text-base">Adatok exportálása</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Download className="h-4 w-4 text-success" />
+                Adatok exportálása
+              </CardTitle>
               <CardDescription>
                 Mentsd el az összes adatot JSON formátumban biztonsági másolatként.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={handleExport} className="w-full" disabled={totalRecords === 0}>
+              <Button onClick={handleExport} className="w-full bg-success hover:bg-success/90" disabled={totalRecords === 0}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportálás JSON-ba
               </Button>
@@ -158,9 +163,12 @@ export default function DataManagement() {
           </Card>
 
           {/* Import */}
-          <Card>
+          <Card className="border-primary/20 hover:border-primary/40 transition-colors">
             <CardHeader>
-              <CardTitle className="text-base">Adatok importálása</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Upload className="h-4 w-4 text-primary" />
+                Adatok importálása
+              </CardTitle>
               <CardDescription>
                 Töltsd be egy korábban mentett JSON fájlból az adatokat.
               </CardDescription>
@@ -176,7 +184,7 @@ export default function DataManagement() {
               />
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10">
                     <Upload className="h-4 w-4 mr-2" />
                     Importálás JSON-ból
                   </Button>
