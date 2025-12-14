@@ -11,9 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { SearchFilter } from '@/components/SearchFilter';
 import { Plus, Phone, Mail, ChevronRight, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
-
 export default function Customers() {
-  const { customers, addCustomer } = useCustomers();
+  const {
+    customers,
+    addCustomer
+  } = useCustomers();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -22,22 +24,13 @@ export default function Customers() {
     name: '',
     phone: '',
     email: '',
-    address: '',
+    address: ''
   });
-
-  const filteredCustomers = customers
-    .filter(
-      (customer) =>
-        customer.name.toLowerCase().includes(search.toLowerCase()) ||
-        customer.phone.includes(search) ||
-        (customer.email && customer.email.toLowerCase().includes(search.toLowerCase()))
-    )
-    .sort((a, b) => {
-      if (sortFilter.includes('name-asc')) return a.name.localeCompare(b.name);
-      if (sortFilter.includes('name-desc')) return b.name.localeCompare(a.name);
-      return 0;
-    });
-
+  const filteredCustomers = customers.filter(customer => customer.name.toLowerCase().includes(search.toLowerCase()) || customer.phone.includes(search) || customer.email && customer.email.toLowerCase().includes(search.toLowerCase())).sort((a, b) => {
+    if (sortFilter.includes('name-asc')) return a.name.localeCompare(b.name);
+    if (sortFilter.includes('name-desc')) return b.name.localeCompare(a.name);
+    return 0;
+  });
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.phone) {
@@ -46,22 +39,19 @@ export default function Customers() {
     }
     addCustomer(formData);
     toast.success('Ügyfél hozzáadva!');
-    setFormData({ name: '', phone: '', email: '', address: '' });
+    setFormData({
+      name: '',
+      phone: '',
+      email: '',
+      address: ''
+    });
     setIsOpen(false);
   };
-
   const toggleSortFilter = (id: string) => {
-    setSortFilter((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [id]
-    );
+    setSortFilter(prev => prev.includes(id) ? prev.filter(f => f !== id) : [id]);
   };
-
-  return (
-    <>
-      <Header
-        title="Ügyfelek"
-        action={
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+  return <>
+      <Header title="Ügyfelek" action={<Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="h-9">
                 <Plus className="h-4 w-4 mr-1" />
@@ -75,68 +65,53 @@ export default function Customers() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Név *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Kovács János"
-                  />
+                  <Input id="name" value={formData.name} onChange={e => setFormData({
+              ...formData,
+              name: e.target.value
+            })} placeholder="Kovács János" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Telefon *</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+36 30 123 4567"
-                  />
+                  <Input id="phone" value={formData.phone} onChange={e => setFormData({
+              ...formData,
+              phone: e.target.value
+            })} placeholder="+36 30 123 4567" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="kovacs@email.hu"
-                  />
+                  <Input id="email" type="email" value={formData.email} onChange={e => setFormData({
+              ...formData,
+              email: e.target.value
+            })} placeholder="kovacs@email.hu" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">Cím</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Budapest, Kossuth u. 1."
-                  />
+                  <Input id="address" value={formData.address} onChange={e => setFormData({
+              ...formData,
+              address: e.target.value
+            })} placeholder="Budapest, Kossuth u. 1." />
                 </div>
                 <Button type="submit" className="w-full">
                   Mentés
                 </Button>
               </form>
             </DialogContent>
-          </Dialog>
-        }
-      />
+          </Dialog>} />
       <PageContainer>
         <div className="p-4 space-y-4 animate-fade-in">
           {/* Search and Filters */}
-          <SearchFilter
-            search={search}
-            onSearchChange={setSearch}
-            placeholder="Keresés név, telefon, email..."
-            filters={[
-              {
-                label: 'Rendezés',
-                options: [
-                  { id: 'name-asc', label: 'Név (A-Z)' },
-                  { id: 'name-desc', label: 'Név (Z-A)' },
-                ],
-                selected: sortFilter,
-                onToggle: toggleSortFilter,
-              },
-            ]}
-          />
+          <SearchFilter search={search} onSearchChange={setSearch} placeholder="Keresés név, telefon, email..." filters={[{
+          label: 'Rendezés',
+          options: [{
+            id: 'name-asc',
+            label: 'Név (A-Z)'
+          }, {
+            id: 'name-desc',
+            label: 'Név (Z-A)'
+          }],
+          selected: sortFilter,
+          onToggle: toggleSortFilter
+        }]} />
 
           {/* Results count */}
           <p className="text-xs text-muted-foreground">
@@ -145,20 +120,12 @@ export default function Customers() {
 
           {/* Customer List */}
           <div className="space-y-2">
-            {filteredCustomers.length === 0 ? (
-              <Card>
+            {filteredCustomers.length === 0 ? <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
                   {search ? 'Nincs találat' : 'Még nincs ügyfél'}
                 </CardContent>
-              </Card>
-            ) : (
-              filteredCustomers.map((customer) => (
-                <Card
-                  key={customer.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => navigate(`/customers/${customer.id}`)}
-                >
-                  <CardContent className="p-4">
+              </Card> : filteredCustomers.map(customer => <Card key={customer.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/customers/${customer.id}`)}>
+                  <CardContent className="p-4 border-accent">
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium truncate">{customer.name}</h3>
@@ -167,29 +134,22 @@ export default function Customers() {
                             <Phone className="h-3 w-3" />
                             {customer.phone}
                           </span>
-                          {customer.email && (
-                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                          {customer.email && <span className="text-sm text-muted-foreground flex items-center gap-1">
                               <Mail className="h-3 w-3" />
                               {customer.email}
-                            </span>
-                          )}
-                          {customer.address && (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            </span>}
+                          {customer.address && <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               {customer.address}
-                            </span>
-                          )}
+                            </span>}
                         </div>
                       </div>
                       <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
                     </div>
                   </CardContent>
-                </Card>
-              ))
-            )}
+                </Card>)}
           </div>
         </div>
       </PageContainer>
-    </>
-  );
+    </>;
 }
