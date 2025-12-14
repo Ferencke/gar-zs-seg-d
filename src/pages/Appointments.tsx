@@ -354,6 +354,13 @@ export default function Appointments() {
     );
   };
 
+  // Stats for the header cards
+  const scheduledCount = appointments.filter(a => a.status === 'scheduled').length;
+  const todayCount = appointments.filter(a => 
+    a.status === 'scheduled' && 
+    a.scheduledDate === new Date().toISOString().split('T')[0]
+  ).length;
+
   return (
     <>
       <Header
@@ -361,7 +368,7 @@ export default function Appointments() {
         action={
           <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-9">
+              <Button size="sm" className="h-9 bg-gradient-to-r from-primary to-primary/80">
                 <Plus className="h-4 w-4 mr-1" />
                 Új
               </Button>
@@ -377,6 +384,36 @@ export default function Appointments() {
       />
       <PageContainer>
         <div className="p-4 space-y-4 animate-fade-in">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <Calendar className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-primary">{scheduledCount}</p>
+                    <p className="text-xs text-muted-foreground">Tervezett</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-accent/10 via-accent/5 to-transparent border-accent/20">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-accent/20">
+                    <Clock className="h-4 w-4 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-accent">{todayCount}</p>
+                    <p className="text-xs text-muted-foreground">Mai nap</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Search and Filters */}
           <SearchFilter
             search={search}
@@ -400,16 +437,16 @@ export default function Appointments() {
 
           {/* View Mode Tabs */}
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-            <TabsList className="w-full grid grid-cols-3">
-              <TabsTrigger value="list" className="text-xs gap-1">
+            <TabsList className="w-full grid grid-cols-3 bg-secondary/50">
+              <TabsTrigger value="list" className="text-xs gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <List className="h-3 w-3" />
                 Lista
               </TabsTrigger>
-              <TabsTrigger value="week" className="text-xs gap-1">
+              <TabsTrigger value="week" className="text-xs gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <CalendarDays className="h-3 w-3" />
                 Heti
               </TabsTrigger>
-              <TabsTrigger value="month" className="text-xs gap-1">
+              <TabsTrigger value="month" className="text-xs gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Calendar className="h-3 w-3" />
                 Havi
               </TabsTrigger>
@@ -418,13 +455,13 @@ export default function Appointments() {
 
           {/* Calendar Views */}
           {viewMode !== 'list' && (
-            <Card>
+            <Card className="bg-gradient-to-br from-secondary/30 to-transparent border-border/50">
               <CardContent className="p-3">
                 <div className="flex items-center justify-between mb-3">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateCalendar(-1)}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <span className="font-medium">
+                  <span className="font-medium text-foreground">
                     {currentDate.toLocaleDateString('hu-HU', { 
                       year: 'numeric', 
                       month: 'long',
@@ -555,8 +592,8 @@ export default function Appointments() {
               {/* Upcoming Appointments */}
               <div>
                 <h2 className="text-sm font-medium text-muted-foreground mb-3">Közelgő előjegyzések</h2>
-                {upcomingAppointments.length === 0 ? (
-                  <Card className="bg-secondary/30">
+              {upcomingAppointments.length === 0 ? (
+                  <Card className="bg-gradient-to-br from-secondary/30 to-transparent border-border/50">
                     <CardContent className="p-6 text-center text-muted-foreground">
                       <Calendar className="h-10 w-10 mx-auto mb-2 opacity-50" />
                       <p>Nincsenek közelgő előjegyzések</p>
@@ -565,7 +602,10 @@ export default function Appointments() {
                 ) : (
                   <div className="space-y-3">
                     {upcomingAppointments.map((appointment) => (
-                      <Card key={appointment.id} className="overflow-hidden">
+                      <Card 
+                        key={appointment.id} 
+                        className="overflow-hidden bg-gradient-to-br from-primary/5 via-transparent to-transparent border-border/50 hover:border-primary/30 transition-colors"
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -578,7 +618,7 @@ export default function Appointments() {
                                   {appointment.scheduledTime}
                                 </span>
                               </div>
-                              <p className="font-medium mb-1">{appointment.description}</p>
+                              <p className="font-medium text-foreground mb-1">{appointment.description}</p>
                               <div className="flex flex-col gap-1 text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <User className="h-3 w-3" />
@@ -642,7 +682,7 @@ export default function Appointments() {
                   <h2 className="text-sm font-medium text-muted-foreground mb-3">Korábbi előjegyzések</h2>
                   <div className="space-y-2">
                     {pastAppointments.map((appointment) => (
-                      <Card key={appointment.id} className="bg-secondary/30">
+                      <Card key={appointment.id} className="bg-gradient-to-br from-secondary/30 to-transparent border-border/50">
                         <CardContent className="p-3">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex-1 min-w-0">
