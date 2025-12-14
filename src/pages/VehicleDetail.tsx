@@ -368,7 +368,7 @@ ${serviceHistory || 'Nincs szerviz előzmény'}
                       <Settings className="h-3 w-3" />
                       ECU
                     </span>
-                    <span className="font-mono text-sm">{vehicle.ecuType}</span>
+                    <span className="font-mono text-sm font-normal">{vehicle.ecuType}</span>
                   </div>}
                 {vehicle.displacement && <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Hengerűrt.</span>
