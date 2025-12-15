@@ -144,24 +144,12 @@ export default function Customers() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium truncate">{customer.name}</h3>
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
-                            <span className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Phone className="h-3 w-3 text-success" />
-                              {customer.phone}
-                            </span>
-                            {customer.email && (
-                              <span className="text-sm text-muted-foreground flex items-center gap-1">
-                                <Mail className="h-3 w-3 text-primary" />
-                                {customer.email}
-                              </span>
-                            )}
-                            {customer.address && (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <MapPin className="h-3 w-3 text-accent" />
-                                {customer.address}
-                              </span>
-                            )}
-                          </div>
+                          {customer.address && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                              <MapPin className="h-3 w-3 text-accent" />
+                              {customer.address}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <ChevronRight className="h-5 w-5 text-primary/50 shrink-0" />
