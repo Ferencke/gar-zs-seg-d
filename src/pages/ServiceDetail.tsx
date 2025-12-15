@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useServiceRecords } from '@/hooks/useServiceRecords';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +25,7 @@ export default function ServiceDetail() {
   const { serviceRecords, updateServiceRecord, deleteServiceRecord } = useServiceRecords();
   const { getVehicle } = useVehicles();
   const { getCustomer } = useCustomers();
+  const { settings: companySettings } = useCompanySettings();
   const worksheetRef = useRef<HTMLDivElement>(null);
 
   const service = serviceRecords.find((s) => s.id === id);
@@ -138,8 +140,23 @@ export default function ServiceDetail() {
     const partsTotal = (service.parts || []).reduce((sum, p) => sum + (p.price || 0) * p.quantity, 0);
     const laborCost = service.cost ? service.cost - partsTotal : 0;
 
-    const worksheet = `
+    const hasCompanyInfo = companySettings.name || companySettings.address || companySettings.phone || companySettings.email;
+    const companyHeader = hasCompanyInfo ? `
 ╔════════════════════════════════════════╗
+${companySettings.name ? `║  ${companySettings.name.toUpperCase().padStart(20 + companySettings.name.length / 2).padEnd(38)}║\n` : ''}╚════════════════════════════════════════╝
+${companySettings.address ? `${companySettings.address}\n` : ''}${companySettings.phone ? `Tel: ${companySettings.phone}` : ''}${companySettings.email ? ` | ${companySettings.email}` : ''}
+${companySettings.taxNumber ? `Adószám: ${companySettings.taxNumber}` : ''}${companySettings.bankAccount ? ` | Bankszámla: ${companySettings.bankAccount}` : ''}
+${companySettings.website ? `Web: ${companySettings.website}` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+` : '';
+
+    const locationDateLine = [
+      service.location ? service.location : null,
+      `Dátum: ${new Date(service.date).toLocaleDateString('hu-HU')}`
+    ].filter(Boolean).join(' | ');
+
+    const worksheet = `${companyHeader}╔════════════════════════════════════════╗
 ║             MUNKALAP                   ║
 ╚════════════════════════════════════════╝
 
@@ -183,8 +200,7 @@ Munkadíj: ${laborCost.toLocaleString()} Ft
 VÉGÖSSZEG: ${(service.cost || 0).toLocaleString()} Ft
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${service.location ? `Hely: ${service.location}` : ''}
-Dátum: ${new Date(service.date).toLocaleDateString('hu-HU')}
+${locationDateLine}
 `;
 
     if (navigator.share) {
@@ -209,6 +225,31 @@ Dátum: ${new Date(service.date).toLocaleDateString('hu-HU')}
     const printContent = worksheetRef.current;
     if (!printContent) return;
 
+    const hasCompanyInfo = companySettings.name || companySettings.address || companySettings.phone || companySettings.email;
+
+    const companyHeaderHtml = hasCompanyInfo ? `
+      <div class="company-header">
+        ${companySettings.name ? `<h2 class="company-name">${companySettings.name}</h2>` : ''}
+        <div class="company-details">
+          ${companySettings.address ? `<span>${companySettings.address}</span>` : ''}
+          ${companySettings.phone ? `<span>Tel: ${companySettings.phone}</span>` : ''}
+          ${companySettings.email ? `<span>${companySettings.email}</span>` : ''}
+        </div>
+        ${companySettings.taxNumber || companySettings.bankAccount ? `
+          <div class="company-details">
+            ${companySettings.taxNumber ? `<span>Adószám: ${companySettings.taxNumber}</span>` : ''}
+            ${companySettings.bankAccount ? `<span>Bankszámla: ${companySettings.bankAccount}</span>` : ''}
+          </div>
+        ` : ''}
+        ${companySettings.website ? `<div class="company-details"><span>${companySettings.website}</span></div>` : ''}
+      </div>
+    ` : '';
+
+    const footerContent = [
+      service.location ? service.location : null,
+      new Date(service.date).toLocaleDateString('hu-HU')
+    ].filter(Boolean).join(' • ');
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
@@ -218,6 +259,10 @@ Dátum: ${new Date(service.date).toLocaleDateString('hu-HU')}
           <title>Munkalap - ${vehicle?.licensePlate}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+            .company-header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #333; }
+            .company-name { font-size: 24px; font-weight: bold; margin: 0 0 8px 0; color: #1a1a1a; }
+            .company-details { font-size: 12px; color: #555; margin: 4px 0; }
+            .company-details span { margin: 0 10px; }
             .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
             .section { margin-bottom: 20px; }
             .section-title { font-weight: bold; background: #f0f0f0; padding: 5px 10px; margin-bottom: 10px; }
@@ -234,9 +279,9 @@ Dátum: ${new Date(service.date).toLocaleDateString('hu-HU')}
           </style>
         </head>
         <body>
+          ${companyHeaderHtml}
           <div class="header">
             <h1>MUNKALAP</h1>
-            <p>Dátum: ${new Date(service.date).toLocaleDateString('hu-HU')}</p>
           </div>
           
           <div class="grid">
@@ -300,7 +345,7 @@ Dátum: ${new Date(service.date).toLocaleDateString('hu-HU')}
           </div>
           
           <div class="footer">
-            ${service.location ? `<p>Hely: ${service.location}</p>` : ''}
+            <p>${footerContent}</p>
           </div>
         </body>
       </html>
@@ -329,6 +374,33 @@ Dátum: ${new Date(service.date).toLocaleDateString('hu-HU')}
                   <DialogTitle>Munkalap</DialogTitle>
                 </DialogHeader>
                 <div ref={worksheetRef} className="space-y-4 text-sm">
+                  {/* Company Header */}
+                  {(companySettings.name || companySettings.address || companySettings.phone) && (
+                    <div className="text-center border-b border-border pb-3 mb-3">
+                      {companySettings.name && (
+                        <h2 className="text-lg font-bold text-foreground">{companySettings.name}</h2>
+                      )}
+                      <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                        {companySettings.address && <p>{companySettings.address}</p>}
+                        <p>
+                          {[
+                            companySettings.phone ? `Tel: ${companySettings.phone}` : null,
+                            companySettings.email
+                          ].filter(Boolean).join(' • ')}
+                        </p>
+                        {(companySettings.taxNumber || companySettings.bankAccount) && (
+                          <p>
+                            {[
+                              companySettings.taxNumber ? `Adószám: ${companySettings.taxNumber}` : null,
+                              companySettings.bankAccount ? `Bankszámla: ${companySettings.bankAccount}` : null
+                            ].filter(Boolean).join(' • ')}
+                          </p>
+                        )}
+                        {companySettings.website && <p>{companySettings.website}</p>}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Vehicle Info */}
                   <div className="grid grid-cols-2 gap-4 p-3 bg-secondary/30 rounded-lg">
                     <div>
@@ -416,10 +488,14 @@ Dátum: ${new Date(service.date).toLocaleDateString('hu-HU')}
                     </div>
                   </div>
 
-                  {/* Footer */}
+                  {/* Footer - location and date in one row */}
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    {service.location && <span>{service.location}</span>}
-                    <span>{new Date(service.date).toLocaleDateString('hu-HU')}</span>
+                    <span>
+                      {[
+                        service.location ? service.location : null,
+                        new Date(service.date).toLocaleDateString('hu-HU')
+                      ].filter(Boolean).join(' • ')}
+                    </span>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">

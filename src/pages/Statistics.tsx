@@ -1,15 +1,39 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useServiceRecords } from '@/hooks/useServiceRecords';
 import { useVehicles } from '@/hooks/useVehicles';
+import { useCustomers } from '@/hooks/useCustomers';
 import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Wrench, Car, DollarSign } from 'lucide-react';
+import { TrendingUp, Wrench, Car, DollarSign, Users } from 'lucide-react';
 
 export default function Statistics() {
   const { serviceRecords } = useServiceRecords();
   const { vehicles } = useVehicles();
+  const { customers } = useCustomers();
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('all');
+
+  // Customer spending per vehicle stats
+  const customerVehicleSpending = useMemo(() => {
+    if (selectedCustomerId === 'all') return null;
+
+    const customerVehicles = vehicles.filter(v => v.customerId === selectedCustomerId);
+    return customerVehicles.map(vehicle => {
+      const vehicleServices = serviceRecords.filter(s => s.vehicleId === vehicle.id);
+      const totalSpent = vehicleServices.reduce((sum, s) => sum + (s.cost || 0), 0);
+      const serviceCount = vehicleServices.length;
+      return {
+        vehicleId: vehicle.id,
+        licensePlate: vehicle.licensePlate,
+        brand: vehicle.brand,
+        model: vehicle.model,
+        totalSpent,
+        serviceCount
+      };
+    }).sort((a, b) => b.totalSpent - a.totalSpent);
+  }, [selectedCustomerId, vehicles, serviceRecords]);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -146,6 +170,77 @@ export default function Statistics() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Customer Vehicle Spending Filter */}
+          <Card className="border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Ügyfél autónkénti költése
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Válassz ügyfelet..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Összes ügyfél</SelectItem>
+                  {customers.map(customer => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {selectedCustomerId !== 'all' && customerVehicleSpending && (
+                <div className="space-y-2">
+                  {customerVehicleSpending.length > 0 ? (
+                    customerVehicleSpending.map(vehicle => (
+                      <div 
+                        key={vehicle.vehicleId} 
+                        className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-border/50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <Car className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{vehicle.licensePlate}</p>
+                            <p className="text-xs text-muted-foreground">{vehicle.brand} {vehicle.model}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-success">{vehicle.totalSpent.toLocaleString()} Ft</p>
+                          <p className="text-xs text-muted-foreground">{vehicle.serviceCount} szerviz</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-muted-foreground py-4">
+                      Ennek az ügyfélnek nincs járműve
+                    </p>
+                  )}
+                  
+                  {customerVehicleSpending.length > 0 && (
+                    <div className="flex justify-between p-3 rounded-lg bg-success/10 border border-success/20 font-bold">
+                      <span>Összes költés:</span>
+                      <span className="text-success">
+                        {customerVehicleSpending.reduce((sum, v) => sum + v.totalSpent, 0).toLocaleString()} Ft
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {selectedCustomerId === 'all' && (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  Válassz egy ügyfelet a járművenkénti költés megtekintéséhez
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Monthly Revenue Chart */}
           <Card>
