@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,13 @@ export function ShareReminderDialog({
 }: ShareReminderDialogProps) {
   const [editedMessage, setEditedMessage] = useState(message);
   const [copied, setCopied] = useState(false);
+
+  // Frissíti az üzenetet minden megnyitáskor
+  useEffect(() => {
+    if (open) {
+      setEditedMessage(message);
+    }
+  }, [open, message]);
 
   const handleShare = async (method: 'native' | 'whatsapp' | 'sms' | 'email' | 'copy') => {
     const encodedMessage = encodeURIComponent(editedMessage);
