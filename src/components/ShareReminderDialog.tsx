@@ -14,7 +14,8 @@ import {
   Share2, 
   Copy, 
   Check,
-  Smartphone
+  Smartphone,
+  Send
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -41,7 +42,7 @@ export function ShareReminderDialog({
     }
   }, [open, message]);
 
-  const handleShare = async (method: 'native' | 'whatsapp' | 'sms' | 'email' | 'copy') => {
+  const handleShare = async (method: 'native' | 'whatsapp' | 'viber' | 'messenger' | 'sms' | 'email' | 'copy') => {
     const encodedMessage = encodeURIComponent(editedMessage);
 
     switch (method) {
@@ -67,6 +68,24 @@ export function ShareReminderDialog({
       case 'whatsapp':
         window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
         onOpenChange(false);
+        break;
+
+      case 'viber':
+        window.open(`viber://forward?text=${encodedMessage}`, '_blank');
+        onOpenChange(false);
+        break;
+
+      case 'messenger':
+        // Messenger desktop/web fallback - másolás és átirányítás
+        try {
+          await navigator.clipboard.writeText(editedMessage);
+          window.open('https://www.messenger.com/', '_blank');
+          toast.success('Szöveg másolva! Illeszd be a Messengerben.');
+          onOpenChange(false);
+        } catch {
+          window.open('https://www.messenger.com/', '_blank');
+          onOpenChange(false);
+        }
         break;
 
       case 'sms':
@@ -122,7 +141,7 @@ export function ShareReminderDialog({
                 className="flex items-center gap-2 h-12"
                 onClick={() => handleShare('native')}
               >
-                <Smartphone className="h-5 w-5 text-blue-500" />
+                <Smartphone className="h-5 w-5 text-primary" />
                 <span>Megosztás...</span>
               </Button>
             )}
@@ -132,8 +151,26 @@ export function ShareReminderDialog({
               className="flex items-center gap-2 h-12"
               onClick={() => handleShare('whatsapp')}
             >
-              <MessageCircle className="h-5 w-5 text-green-500" />
+              <MessageCircle className="h-5 w-5 text-[hsl(142,70%,45%)]" />
               <span>WhatsApp</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 h-12"
+              onClick={() => handleShare('viber')}
+            >
+              <Send className="h-5 w-5 text-[hsl(270,60%,55%)]" />
+              <span>Viber</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 h-12"
+              onClick={() => handleShare('messenger')}
+            >
+              <MessageCircle className="h-5 w-5 text-[hsl(214,89%,52%)]" />
+              <span>Messenger</span>
             </Button>
 
             <Button
@@ -141,7 +178,7 @@ export function ShareReminderDialog({
               className="flex items-center gap-2 h-12"
               onClick={() => handleShare('sms')}
             >
-              <Phone className="h-5 w-5 text-blue-600" />
+              <Phone className="h-5 w-5 text-primary" />
               <span>SMS</span>
             </Button>
 
@@ -150,7 +187,7 @@ export function ShareReminderDialog({
               className="flex items-center gap-2 h-12"
               onClick={() => handleShare('email')}
             >
-              <Mail className="h-5 w-5 text-orange-500" />
+              <Mail className="h-5 w-5 text-destructive" />
               <span>Email</span>
             </Button>
 
@@ -160,7 +197,7 @@ export function ShareReminderDialog({
               onClick={() => handleShare('copy')}
             >
               {copied ? (
-                <Check className="h-5 w-5 text-green-500" />
+                <Check className="h-5 w-5 text-[hsl(142,70%,45%)]" />
               ) : (
                 <Copy className="h-5 w-5 text-muted-foreground" />
               )}
