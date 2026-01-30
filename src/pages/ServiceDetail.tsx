@@ -15,9 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Car, User, Calendar, Gauge, Banknote, Trash2, Edit, FileText, Package, Share2, Printer, Clock, MapPin, Plus, Image, X } from 'lucide-react';
+import { Car, User, Calendar, Gauge, Banknote, Trash2, Edit, FileText, Package, Share2, Printer, Clock, MapPin, Plus, Image, X, Download, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { Part } from '@/types';
+import { downloadWorksheetPdf, openEmailWithPdf } from '@/utils/pdfGenerator';
 
 export default function ServiceDetail() {
   const { id } = useParams<{ id: string }>();
@@ -498,8 +499,29 @@ ${locationDateLine}
                     </span>
                   </div>
                 </div>
-                <div className="flex gap-2 mt-4">
-                  <Button className="flex-1" onClick={handleShareWorksheet}>
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                  <Button 
+                    className="flex-1" 
+                    onClick={() => {
+                      downloadWorksheetPdf({ service, vehicle, customer, companySettings });
+                      toast.success('PDF letöltve!');
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    PDF letöltés
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    onClick={() => {
+                      openEmailWithPdf({ service, vehicle, customer, companySettings });
+                      toast.success('Email kliens megnyitva, PDF letöltve!');
+                    }}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Email küldés
+                  </Button>
+                  <Button variant="outline" className="flex-1" onClick={handleShareWorksheet}>
                     <Share2 className="h-4 w-4 mr-2" />
                     Megosztás
                   </Button>
