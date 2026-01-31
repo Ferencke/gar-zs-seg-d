@@ -4,8 +4,9 @@ import { useVehicles } from '@/hooks/useVehicles';
 import { useCustomers } from '@/hooks/useCustomers';
 import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SearchFilter } from '@/components/SearchFilter';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChevronRight, User, AlertTriangle, Car, Fuel, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +17,7 @@ export default function Vehicles() {
   const [search, setSearch] = useState('');
   const [brandFilter, setBrandFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [showExpiringDialog, setShowExpiringDialog] = useState(false);
 
   // Get unique brands for filter
   const uniqueBrands = [...new Set(vehicles.map(v => v.brand))].sort();
@@ -44,10 +46,10 @@ export default function Vehicles() {
 
   // Stats
   const totalVehicles = vehicles.length;
-  const expiringCount = vehicles.filter(v => 
+  const expiringVehicles = vehicles.filter(v => 
     v.technicalInspectionDate && 
     Math.ceil((new Date(v.technicalInspectionDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 30
-  ).length;
+  ).sort((a, b) => new Date(a.technicalInspectionDate!).getTime() - new Date(b.technicalInspectionDate!).getTime());
 
   return (
     <>
@@ -69,14 +71,17 @@ export default function Vehicles() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-warning/10 via-warning/5 to-transparent border-warning/20">
+            <Card 
+              className="bg-gradient-to-br from-warning/10 via-warning/5 to-transparent border-warning/20 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => expiringVehicles.length > 0 && setShowExpiringDialog(true)}
+            >
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-warning/20">
                     <AlertTriangle className="h-4 w-4 text-warning" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-warning">{expiringCount}</p>
+                    <p className="text-lg font-bold text-warning">{expiringVehicles.length}</p>
                     <p className="text-xs text-muted-foreground">Lejáró műszaki</p>
                   </div>
                 </div>
@@ -154,8 +159,9 @@ export default function Vehicles() {
                             )}>
                               <Car className={cn('h-4 w-4', hasExpiring ? 'text-warning' : 'text-primary')} />
                             </div>
-                            <span className="font-mono font-bold text-foreground">
-                              {vehicle.licensePlate}
+                            {/* Vehicle type highlighted instead of license plate */}
+                            <span className="font-bold text-foreground">
+                              {vehicle.brand} {vehicle.model}
                             </span>
                             {hasExpiring && (
                               <span className={cn(
@@ -169,10 +175,16 @@ export default function Vehicles() {
                               </span>
                             )}
                           </div>
-                          <p className="text-sm font-medium text-foreground mt-1.5">
-                            {vehicle.brand} {vehicle.model}
-                          </p>
-                          <div className="flex flex-wrap gap-2 mt-1.5">
+                          {/* Displacement and year next to type */}
+                          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                            <span className="font-mono text-sm text-muted-foreground">
+                              {vehicle.licensePlate}
+                            </span>
+                            {vehicle.displacement && (
+                              <span className="text-xs text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
+                                {vehicle.displacement} cm³
+                              </span>
+                            )}
                             {vehicle.year && (
                               <span className="text-xs flex items-center gap-1 text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
                                 <Calendar className="h-3 w-3" />
@@ -202,6 +214,73 @@ export default function Vehicles() {
             )}
           </div>
         </div>
+
+        {/* Expiring Vehicles Dialog */}
+        <Dialog open={showExpiringDialog} onOpenChange={setShowExpiringDialog}>
+          <DialogContent className="mx-4 max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                Lejáró műszakik ({expiringVehicles.length})
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              {expiringVehicles.map((vehicle) => {
+                const customer = getCustomer(vehicle.customerId);
+                const daysUntilExpiry = Math.ceil(
+                  (new Date(vehicle.technicalInspectionDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                );
+                const isExpired = daysUntilExpiry < 0;
+
+                return (
+                  <Card 
+                    key={vehicle.id}
+                    className={cn(
+                      'cursor-pointer hover:shadow-md transition-all',
+                      isExpired 
+                        ? 'bg-gradient-to-r from-destructive/10 to-transparent border-destructive/30' 
+                        : 'bg-gradient-to-r from-warning/10 to-transparent border-warning/30'
+                    )}
+                    onClick={() => {
+                      setShowExpiringDialog(false);
+                      navigate(`/vehicles/${vehicle.id}`);
+                    }}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
+                          <p className="text-sm text-muted-foreground">{vehicle.licensePlate}</p>
+                          {customer && (
+                            <p className="text-xs text-primary mt-1">{customer.name}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className={cn(
+                            'text-xs px-2 py-1 rounded font-medium',
+                            isExpired 
+                              ? 'bg-destructive/20 text-destructive' 
+                              : 'bg-warning/20 text-warning'
+                          )}>
+                            {isExpired ? `${Math.abs(daysUntilExpiry)} napja lejárt` : `${daysUntilExpiry} nap`}
+                          </span>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(vehicle.technicalInspectionDate!).toLocaleDateString('hu-HU')}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              {expiringVehicles.length === 0 && (
+                <p className="text-center text-muted-foreground py-4">
+                  Nincs lejáró műszakis jármű
+                </p>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </PageContainer>
     </>
   );

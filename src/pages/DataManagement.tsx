@@ -9,7 +9,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Download, Upload, Database, AlertTriangle, Building2, ChevronRight } from 'lucide-react';
+import { Download, Upload, AlertTriangle, Building2, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExportData {
@@ -110,41 +110,6 @@ export default function DataManagement() {
       <Header title="Adatkezelés" />
       <PageContainer>
         <div className="p-4 space-y-4 animate-fade-in">
-          {/* Data Summary */}
-          <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Database className="h-5 w-5 text-primary" />
-                </div>
-                Adatok összegzése
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex justify-between p-3 bg-gradient-to-r from-primary/10 to-transparent rounded-lg border border-primary/10">
-                  <span className="text-muted-foreground">Ügyfelek</span>
-                  <span className="font-bold text-primary">{customers.length}</span>
-                </div>
-                <div className="flex justify-between p-3 bg-gradient-to-r from-accent/10 to-transparent rounded-lg border border-accent/10">
-                  <span className="text-muted-foreground">Járművek</span>
-                  <span className="font-bold text-accent">{vehicles.length}</span>
-                </div>
-                <div className="flex justify-between p-3 bg-gradient-to-r from-success/10 to-transparent rounded-lg border border-success/10">
-                  <span className="text-muted-foreground">Szervizbejegyzések</span>
-                  <span className="font-bold text-success">{serviceRecords.length}</span>
-                </div>
-                <div className="flex justify-between p-3 bg-gradient-to-r from-warning/10 to-transparent rounded-lg border border-warning/10">
-                  <span className="text-muted-foreground">Előjegyzések</span>
-                  <span className="font-bold text-warning">{appointments.length}</span>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                Összesen <span className="font-semibold text-foreground">{totalRecords}</span> bejegyzés
-              </p>
-            </CardContent>
-          </Card>
-
           {/* Company Settings */}
           <Card 
             className="cursor-pointer hover:shadow-md transition-all border-accent/20 hover:border-accent/40 bg-gradient-to-br from-accent/5 to-transparent"
