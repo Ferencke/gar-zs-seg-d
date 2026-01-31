@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { SearchFilter } from '@/components/SearchFilter';
-import { Plus, Phone, Mail, ChevronRight, MapPin, Users } from 'lucide-react';
+import { Plus, Phone, Mail, ChevronRight, Users } from 'lucide-react';
 import { toast } from 'sonner';
 export default function Customers() {
   const {
@@ -120,22 +120,14 @@ export default function Customers() {
 
           {/* Customer List */}
           <div className="space-y-2">
-            {filteredCustomers.length === 0 ? (
-              <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+            {filteredCustomers.length === 0 ? <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
                 <CardContent className="p-8 text-center">
                   <Users className="h-12 w-12 mx-auto text-primary/30 mb-3" />
                   <p className="text-muted-foreground">
                     {search ? 'Nincs találat' : 'Még nincs ügyfél'}
                   </p>
                 </CardContent>
-              </Card>
-            ) : (
-              filteredCustomers.map((customer) => (
-                <Card 
-                  key={customer.id} 
-                  className="cursor-pointer hover:shadow-md transition-all hover:border-primary/30 bg-gradient-to-r from-card to-primary/5" 
-                  onClick={() => navigate(`/customers/${customer.id}`)}
-                >
+              </Card> : filteredCustomers.map(customer => <Card key={customer.id} className="cursor-pointer hover:shadow-md transition-all hover:border-primary/30 bg-gradient-to-r from-card to-primary/5" onClick={() => navigate(`/customers/${customer.id}`)}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -144,20 +136,16 @@ export default function Customers() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium truncate">{customer.name}</h3>
-                          {customer.address && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                              <MapPin className="h-3 w-3 text-accent" />
+                          {customer.address && <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                              
                               {customer.address}
-                            </p>
-                          )}
+                            </p>}
                         </div>
                       </div>
                       <ChevronRight className="h-5 w-5 text-primary/50 shrink-0" />
                     </div>
                   </CardContent>
-                </Card>
-              ))
-            )}
+                </Card>)}
           </div>
         </div>
       </PageContainer>
