@@ -8,7 +8,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SearchFilter } from '@/components/SearchFilter';
-import { Calendar, ChevronRight, User, Wrench } from 'lucide-react';
+import { ChevronRight, User, Wrench } from 'lucide-react';
 export default function Services() {
   const {
     serviceRecords
@@ -79,7 +79,7 @@ export default function Services() {
                                   {vehicle.brand} {vehicle.model} ({vehicle.licensePlate})
                                 </span>}
                               <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3 text-primary" />
+                                
                                 {new Date(service.date).toLocaleDateString('hu-HU')}
                               </span>
                             </div>
