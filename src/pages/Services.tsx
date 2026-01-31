@@ -8,7 +8,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SearchFilter } from '@/components/SearchFilter';
-import { ChevronRight, User, Wrench } from 'lucide-react';
+import { ChevronRight, Wrench } from 'lucide-react';
 export default function Services() {
   const {
     serviceRecords
@@ -84,7 +84,7 @@ export default function Services() {
                               </span>
                             </div>
                             {customer && <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                <User className="h-3 w-3 text-primary/60" />
+                                
                                 {customer.name}
                               </p>}
                           </div>
