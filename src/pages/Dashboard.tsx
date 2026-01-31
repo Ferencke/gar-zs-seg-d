@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/NotificationBell';
 import { QuickActions } from '@/components/QuickActions';
-import { Users, Car, Wrench, CalendarClock, AlertTriangle, Clock, TrendingUp, DollarSign, Settings } from 'lucide-react';
+import { Users, Car, Wrench, CalendarClock, AlertTriangle, Clock, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
@@ -17,57 +17,43 @@ export default function Dashboard() {
   const { customers } = useCustomers();
   const { vehicles } = useVehicles();
   const { serviceRecords } = useServiceRecords();
-  const { getTodayAppointments, getUpcomingAppointments } = useAppointments();
+  const { getTodayAppointments, getUpcomingAppointments, appointments } = useAppointments();
   const navigate = useNavigate();
 
   const inProgressServices = serviceRecords.filter((s) => s.status === 'in-progress').length;
   const todayAppointments = getTodayAppointments();
   const upcomingAppointments = getUpcomingAppointments().slice(0, 3);
 
-  // KPI számítások
-  const kpiData = useMemo(() => {
-    const now = new Date();
-    const thisMonth = now.getMonth();
-    const thisYear = now.getFullYear();
-    
-    // Havi bevétel
-    const monthlyRevenue = serviceRecords
-      .filter((s) => {
-        const date = new Date(s.date);
-        return date.getMonth() === thisMonth && date.getFullYear() === thisYear && s.status === 'completed';
-      })
-      .reduce((sum, s) => sum + (s.cost || 0), 0);
+  // Get today's and tomorrow's tasks (scheduled appointments)
+  const todayAndTomorrowTasks = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfterTomorrow = new Date(tomorrow);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
 
-    // Előző havi bevétel (összehasonlításhoz)
-    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-    const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
-    const lastMonthRevenue = serviceRecords
-      .filter((s) => {
-        const date = new Date(s.date);
-        return date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear && s.status === 'completed';
-      })
-      .reduce((sum, s) => sum + (s.cost || 0), 0);
+    const todayStr = today.toISOString().split('T')[0];
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-    const revenueChange = lastMonthRevenue > 0 
-      ? Math.round(((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100) 
-      : 0;
+    const todayTasks = appointments.filter(
+      (a) => a.scheduledDate === todayStr && a.status === 'scheduled'
+    );
+    const tomorrowTasks = appointments.filter(
+      (a) => a.scheduledDate === tomorrowStr && a.status === 'scheduled'
+    );
 
-    // Havi befejezett szervizek
-    const monthlyCompleted = serviceRecords.filter((s) => {
-      const date = new Date(s.date);
-      return date.getMonth() === thisMonth && date.getFullYear() === thisYear && s.status === 'completed';
-    }).length;
+    // If no tasks today/tomorrow, get next upcoming
+    let nextTask = null;
+    if (todayTasks.length === 0 && tomorrowTasks.length === 0) {
+      const upcoming = appointments
+        .filter((a) => a.status === 'scheduled' && new Date(a.scheduledDate) >= today)
+        .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
+      nextTask = upcoming[0] || null;
+    }
 
-    // Átlagos szerviz érték
-    const avgServiceValue = monthlyCompleted > 0 ? Math.round(monthlyRevenue / monthlyCompleted) : 0;
-
-    return {
-      monthlyRevenue,
-      revenueChange,
-      monthlyCompleted,
-      avgServiceValue,
-    };
-  }, [serviceRecords]);
+    return { todayTasks, tomorrowTasks, nextTask };
+  }, [appointments]);
 
   // Vehicles with expiring inspection (within 30 days)
   const expiringVehicles = vehicles.filter((v) => {
@@ -83,6 +69,18 @@ export default function Dashboard() {
     { title: 'Folyamatban', value: inProgressServices, icon: Wrench, color: 'text-warning', bg: 'bg-warning/10', onClick: () => navigate('/services') },
   ];
 
+  const formatTaskDate = (dateStr: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const date = new Date(dateStr);
+    
+    if (date.toDateString() === today.toDateString()) return 'Ma';
+    if (date.toDateString() === tomorrow.toDateString()) return 'Holnap';
+    return date.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' });
+  };
+
   return (
     <>
       <Header 
@@ -96,37 +94,68 @@ export default function Dashboard() {
       />
       <PageContainer>
         <div className="p-4 space-y-6 animate-fade-in">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-2 gap-3">
-            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  {kpiData.revenueChange !== 0 && (
-                    <span className={cn(
-                      'text-xs font-medium flex items-center gap-0.5',
-                      kpiData.revenueChange > 0 ? 'text-success' : 'text-destructive'
-                    )}>
-                      <TrendingUp className={cn('h-3 w-3', kpiData.revenueChange < 0 && 'rotate-180')} />
-                      {Math.abs(kpiData.revenueChange)}%
-                    </span>
-                  )}
-                </div>
-                <p className="text-2xl font-bold mt-2">{kpiData.monthlyRevenue.toLocaleString('hu-HU')} Ft</p>
-                <p className="text-xs text-muted-foreground">Havi bevétel</p>
+          {/* Tasks Widget */}
+          {(todayAndTomorrowTasks.todayTasks.length > 0 || todayAndTomorrowTasks.tomorrowTasks.length > 0 || todayAndTomorrowTasks.nextTask) && (
+            <Card className="bg-gradient-to-br from-primary/10 to-accent/5 border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  Teendők
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {todayAndTomorrowTasks.todayTasks.map((task) => (
+                  <div 
+                    key={task.id}
+                    className="flex items-center justify-between p-3 bg-primary/10 rounded-lg cursor-pointer hover:bg-primary/20 transition-colors"
+                    onClick={() => navigate('/appointments')}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{task.description}</p>
+                      <p className="text-xs text-muted-foreground">{task.customerName}</p>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <span className="text-xs font-medium text-primary bg-primary/20 px-2 py-0.5 rounded">Ma</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">{task.scheduledTime}</p>
+                    </div>
+                  </div>
+                ))}
+                {todayAndTomorrowTasks.tomorrowTasks.map((task) => (
+                  <div 
+                    key={task.id}
+                    className="flex items-center justify-between p-3 bg-accent/10 rounded-lg cursor-pointer hover:bg-accent/20 transition-colors"
+                    onClick={() => navigate('/appointments')}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{task.description}</p>
+                      <p className="text-xs text-muted-foreground">{task.customerName}</p>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <span className="text-xs font-medium text-accent bg-accent/20 px-2 py-0.5 rounded">Holnap</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">{task.scheduledTime}</p>
+                    </div>
+                  </div>
+                ))}
+                {todayAndTomorrowTasks.nextTask && todayAndTomorrowTasks.todayTasks.length === 0 && todayAndTomorrowTasks.tomorrowTasks.length === 0 && (
+                  <div 
+                    className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg cursor-pointer hover:bg-secondary transition-colors"
+                    onClick={() => navigate('/appointments')}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{todayAndTomorrowTasks.nextTask.description}</p>
+                      <p className="text-xs text-muted-foreground">{todayAndTomorrowTasks.nextTask.customerName}</p>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <span className="text-xs font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                        {formatTaskDate(todayAndTomorrowTasks.nextTask.scheduledDate)}
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-0.5">{todayAndTomorrowTasks.nextTask.scheduledTime}</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
-            
-            <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <Wrench className="h-5 w-5 text-success" />
-                </div>
-                <p className="text-2xl font-bold mt-2">{kpiData.monthlyCompleted}</p>
-                <p className="text-xs text-muted-foreground">Havi szerviz</p>
-              </CardContent>
-            </Card>
-          </div>
+          )}
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 gap-3">

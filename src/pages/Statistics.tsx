@@ -2,18 +2,51 @@ import { useMemo, useState } from 'react';
 import { useServiceRecords } from '@/hooks/useServiceRecords';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useAppointments } from '@/hooks/useAppointments';
 import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Wrench, Car, DollarSign, Users } from 'lucide-react';
+import { TrendingUp, Wrench, Car, DollarSign, Users, Database, CalendarClock } from 'lucide-react';
 
 export default function Statistics() {
   const { serviceRecords } = useServiceRecords();
   const { vehicles } = useVehicles();
   const { customers } = useCustomers();
+  const { appointments } = useAppointments();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('all');
+
+  // Year/month filter state
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth();
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+
+  // Available years for filter
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    years.add(currentYear);
+    serviceRecords.forEach(s => years.add(new Date(s.date).getFullYear()));
+    vehicles.forEach(v => years.add(new Date(v.createdAt).getFullYear()));
+    customers.forEach(c => years.add(new Date(c.createdAt).getFullYear()));
+    return Array.from(years).sort((a, b) => b - a);
+  }, [serviceRecords, vehicles, customers, currentYear]);
+
+  const months = [
+    { value: '0', label: 'Január' },
+    { value: '1', label: 'Február' },
+    { value: '2', label: 'Március' },
+    { value: '3', label: 'Április' },
+    { value: '4', label: 'Május' },
+    { value: '5', label: 'Június' },
+    { value: '6', label: 'Július' },
+    { value: '7', label: 'Augusztus' },
+    { value: '8', label: 'Szeptember' },
+    { value: '9', label: 'Október' },
+    { value: '10', label: 'November' },
+    { value: '11', label: 'December' },
+  ];
 
   // Customer spending per vehicle stats
   const customerVehicleSpending = useMemo(() => {
@@ -34,6 +67,49 @@ export default function Statistics() {
       };
     }).sort((a, b) => b.totalSpent - a.totalSpent);
   }, [selectedCustomerId, vehicles, serviceRecords]);
+
+  // Filtered stats based on year/month selection
+  const filteredStats = useMemo(() => {
+    const year = parseInt(selectedYear);
+    const month = selectedMonth !== 'all' ? parseInt(selectedMonth) : null;
+
+    const filterByDate = (dateStr: string) => {
+      const d = new Date(dateStr);
+      const matchesYear = d.getFullYear() === year;
+      const matchesMonth = month === null || d.getMonth() === month;
+      return matchesYear && matchesMonth;
+    };
+
+    // Revenue for selected period
+    const periodRevenue = serviceRecords
+      .filter(s => filterByDate(s.date) && s.status === 'completed')
+      .reduce((sum, s) => sum + (s.cost || 0), 0);
+
+    // Serviced vehicles count
+    const servicedVehicleIds = new Set(
+      serviceRecords
+        .filter(s => filterByDate(s.date))
+        .map(s => s.vehicleId)
+    );
+    const servicedVehiclesCount = servicedVehicleIds.size;
+
+    // Service count
+    const serviceCount = serviceRecords.filter(s => filterByDate(s.date)).length;
+
+    // New vehicles registered
+    const newVehicles = vehicles.filter(v => filterByDate(v.createdAt)).length;
+
+    // New customers registered
+    const newCustomers = customers.filter(c => filterByDate(c.createdAt)).length;
+
+    return {
+      periodRevenue,
+      servicedVehiclesCount,
+      serviceCount,
+      newVehicles,
+      newCustomers,
+    };
+  }, [selectedYear, selectedMonth, serviceRecords, vehicles, customers]);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -110,11 +186,137 @@ export default function Statistics() {
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--muted-foreground))'];
 
+  // Total records for summary
+  const totalRecords = customers.length + vehicles.length + serviceRecords.length + appointments.length;
+
   return (
     <>
       <Header title="Statisztikák" />
       <PageContainer>
         <div className="p-4 space-y-4 animate-fade-in">
+          {/* Data Summary - moved from DataManagement */}
+          <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Database className="h-5 w-5 text-primary" />
+                </div>
+                Adatok összegzése
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex justify-between p-3 bg-gradient-to-r from-primary/10 to-transparent rounded-lg border border-primary/10">
+                  <span className="text-muted-foreground">Ügyfelek</span>
+                  <span className="font-bold text-primary">{customers.length}</span>
+                </div>
+                <div className="flex justify-between p-3 bg-gradient-to-r from-accent/10 to-transparent rounded-lg border border-accent/10">
+                  <span className="text-muted-foreground">Járművek</span>
+                  <span className="font-bold text-accent">{vehicles.length}</span>
+                </div>
+                <div className="flex justify-between p-3 bg-gradient-to-r from-success/10 to-transparent rounded-lg border border-success/10">
+                  <span className="text-muted-foreground">Szervizek</span>
+                  <span className="font-bold text-success">{serviceRecords.length}</span>
+                </div>
+                <div className="flex justify-between p-3 bg-gradient-to-r from-warning/10 to-transparent rounded-lg border border-warning/10">
+                  <span className="text-muted-foreground">Előjegyzések</span>
+                  <span className="font-bold text-warning">{appointments.length}</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3 text-center">
+                Összesen <span className="font-semibold text-foreground">{totalRecords}</span> bejegyzés
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Year/Month Filter */}
+          <Card className="border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarClock className="h-4 w-4 text-primary" />
+                Időszak szűrő
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Év..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableYears.map(year => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Hónap..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Összes hónap</SelectItem>
+                    {months.map(month => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtered Period Stats */}
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <div className="p-3 rounded-lg bg-gradient-to-r from-success/10 to-transparent border border-success/20">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-success" />
+                    <span className="text-xs text-muted-foreground">Bevétel</span>
+                  </div>
+                  <p className="text-lg font-bold text-success mt-1">
+                    {filteredStats.periodRevenue.toLocaleString()} Ft
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-gradient-to-r from-primary/10 to-transparent border border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4 text-primary" />
+                    <span className="text-xs text-muted-foreground">Szervizek</span>
+                  </div>
+                  <p className="text-lg font-bold text-primary mt-1">
+                    {filteredStats.serviceCount}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-gradient-to-r from-accent/10 to-transparent border border-accent/20">
+                  <div className="flex items-center gap-2">
+                    <Car className="h-4 w-4 text-accent" />
+                    <span className="text-xs text-muted-foreground">Szervizelt járművek</span>
+                  </div>
+                  <p className="text-lg font-bold text-accent mt-1">
+                    {filteredStats.servicedVehiclesCount}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-gradient-to-r from-warning/10 to-transparent border border-warning/20">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-warning" />
+                    <span className="text-xs text-muted-foreground">Új ügyfelek</span>
+                  </div>
+                  <p className="text-lg font-bold text-warning mt-1">
+                    {filteredStats.newCustomers}
+                  </p>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-r from-primary/5 to-accent/5 border border-border/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Car className="h-3 w-3" />
+                    Új járművek regisztrálva
+                  </span>
+                  <span className="font-bold text-primary">{filteredStats.newVehicles}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-3">
             <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
@@ -245,7 +447,7 @@ export default function Statistics() {
           {/* Monthly Revenue Chart */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Havi bevétel</CardTitle>
+              <CardTitle className="text-base">Havi bevétel (utolsó 6 hónap)</CardTitle>
             </CardHeader>
             <CardContent>
               {stats.monthlyRevenue.some(m => m.revenue > 0) ? (
