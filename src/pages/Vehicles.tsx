@@ -159,9 +159,11 @@ export default function Vehicles() {
                             )}>
                               <Car className={cn('h-4 w-4', hasExpiring ? 'text-warning' : 'text-primary')} />
                             </div>
-                            {/* Vehicle type highlighted instead of license plate */}
+                            {/* Vehicle type highlighted with displacement and year inline */}
                             <span className="font-bold text-foreground">
                               {vehicle.brand} {vehicle.model}
+                              {vehicle.displacement && <span className="font-normal text-muted-foreground ml-1">{vehicle.displacement} cm³</span>}
+                              {vehicle.year && <span className="font-normal text-muted-foreground ml-1">({vehicle.year})</span>}
                             </span>
                             {hasExpiring && (
                               <span className={cn(
@@ -175,25 +177,13 @@ export default function Vehicles() {
                               </span>
                             )}
                           </div>
-                          {/* Displacement and year next to type */}
+                          {/* Displacement and year inline with type - no icons */}
                           <div className="flex flex-wrap items-center gap-2 mt-1.5">
                             <span className="font-mono text-sm text-muted-foreground">
                               {vehicle.licensePlate}
                             </span>
-                            {vehicle.displacement && (
-                              <span className="text-xs text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
-                                {vehicle.displacement} cm³
-                              </span>
-                            )}
-                            {vehicle.year && (
-                              <span className="text-xs flex items-center gap-1 text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
-                                <Calendar className="h-3 w-3" />
-                                {vehicle.year}
-                              </span>
-                            )}
                             {vehicle.fuelType && (
-                              <span className="text-xs flex items-center gap-1 text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
-                                <Fuel className="h-3 w-3" />
+                              <span className="text-xs text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
                                 {vehicle.fuelType}
                               </span>
                             )}

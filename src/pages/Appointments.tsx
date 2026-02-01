@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useVehicles } from '@/hooks/useVehicles';
+import { useServiceRecords } from '@/hooks/useServiceRecords';
 import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,17 +18,20 @@ import { SearchFilter } from '@/components/SearchFilter';
 import { Plus, Calendar, Clock, Car, User, Trash2, Check, X, ChevronLeft, ChevronRight, Edit, List, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Appointment } from '@/types';
+import { Appointment, Part } from '@/types';
 
 type ViewMode = 'list' | 'month' | 'week';
 
 export default function Appointments() {
   const { appointments, addAppointment, updateAppointment, deleteAppointment, getUpcomingAppointments } = useAppointments();
   const { customers } = useCustomers();
-  const { vehicles, getVehiclesByCustomer } = useVehicles();
+  const { vehicles, getVehiclesByCustomer, getVehicle } = useVehicles();
+  const { addServiceRecord } = useServiceRecords();
   
   const [isOpen, setIsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
+  const [completingAppointment, setCompletingAppointment] = useState<Appointment | null>(null);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -40,6 +44,16 @@ export default function Appointments() {
     scheduledTime: '09:00',
     description: '',
     notes: '',
+  });
+  const [serviceFormData, setServiceFormData] = useState({
+    description: '',
+    mileage: '',
+    cost: '',
+    notes: '',
+    parts: [] as Part[],
+    newPartName: '',
+    newPartQuantity: '1',
+    newPartPrice: '',
   });
 
   // Filter appointments based on search and status
@@ -194,9 +208,84 @@ export default function Appointments() {
     setIsEditOpen(true);
   };
 
-  const handleComplete = (id: string) => {
-    updateAppointment(id, { status: 'completed' });
-    toast.success('Előjegyzés teljesítve!');
+  const handleComplete = (appointment: Appointment) => {
+    // Mark appointment as completed
+    updateAppointment(appointment.id, { status: 'completed' });
+    
+    // Open service dialog if vehicle is assigned
+    if (appointment.vehicleId) {
+      setCompletingAppointment(appointment);
+      setServiceFormData({
+        description: appointment.description,
+        mileage: '',
+        cost: '',
+        notes: appointment.notes || '',
+        parts: [],
+        newPartName: '',
+        newPartQuantity: '1',
+        newPartPrice: '',
+      });
+      setIsServiceDialogOpen(true);
+    } else {
+      toast.success('Előjegyzés teljesítve!');
+    }
+  };
+
+  const handleAddPart = () => {
+    if (!serviceFormData.newPartName.trim()) return;
+    
+    const newPart: Part = {
+      id: crypto.randomUUID(),
+      name: serviceFormData.newPartName,
+      quantity: parseInt(serviceFormData.newPartQuantity) || 1,
+      price: serviceFormData.newPartPrice ? parseInt(serviceFormData.newPartPrice) : undefined,
+    };
+    
+    setServiceFormData({
+      ...serviceFormData,
+      parts: [...serviceFormData.parts, newPart],
+      newPartName: '',
+      newPartQuantity: '1',
+      newPartPrice: '',
+    });
+  };
+
+  const handleRemovePart = (partId: string) => {
+    setServiceFormData({
+      ...serviceFormData,
+      parts: serviceFormData.parts.filter(p => p.id !== partId),
+    });
+  };
+
+  const handleServiceSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!completingAppointment || !completingAppointment.vehicleId) return;
+
+    addServiceRecord({
+      vehicleId: completingAppointment.vehicleId,
+      customerId: completingAppointment.customerId,
+      description: serviceFormData.description,
+      date: new Date().toISOString().split('T')[0],
+      mileage: serviceFormData.mileage ? parseInt(serviceFormData.mileage) : undefined,
+      cost: serviceFormData.cost ? parseInt(serviceFormData.cost) : undefined,
+      notes: serviceFormData.notes || undefined,
+      parts: serviceFormData.parts.length > 0 ? serviceFormData.parts : undefined,
+      status: 'completed',
+    });
+
+    toast.success('Szerviz bejegyzés létrehozva!');
+    setIsServiceDialogOpen(false);
+    setCompletingAppointment(null);
+    setServiceFormData({
+      description: '',
+      mileage: '',
+      cost: '',
+      notes: '',
+      parts: [],
+      newPartName: '',
+      newPartQuantity: '1',
+      newPartPrice: '',
+    });
   };
 
   const handleCancel = (id: string) => {
@@ -655,7 +744,7 @@ export default function Appointments() {
                                 size="icon"
                                 variant="ghost"
                                 className="h-8 w-8 text-success hover:text-success hover:bg-success/10"
-                                onClick={() => handleComplete(appointment.id)}
+                                onClick={() => handleComplete(appointment)}
                               >
                                 <Check className="h-4 w-4" />
                               </Button>
@@ -749,6 +838,145 @@ export default function Appointments() {
             <DialogTitle>Előjegyzés szerkesztése</DialogTitle>
           </DialogHeader>
           {renderAppointmentForm(handleEditSubmit, true)}
+        </DialogContent>
+      </Dialog>
+
+      {/* Service Record Dialog - Opens when completing appointment */}
+      <Dialog open={isServiceDialogOpen} onOpenChange={(open) => { 
+        setIsServiceDialogOpen(open); 
+        if (!open) { 
+          setCompletingAppointment(null);
+          setServiceFormData({
+            description: '',
+            mileage: '',
+            cost: '',
+            notes: '',
+            parts: [],
+            newPartName: '',
+            newPartQuantity: '1',
+            newPartPrice: '',
+          });
+        }
+      }}>
+        <DialogContent className="mx-4 max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Szerviz bejegyzés létrehozása</DialogTitle>
+          </DialogHeader>
+          {completingAppointment && (
+            <form onSubmit={handleServiceSubmit} className="space-y-4">
+              {/* Vehicle info */}
+              <div className="p-3 bg-secondary/50 rounded-lg">
+                <p className="text-sm font-medium">
+                  {completingAppointment.vehicleBrand} {completingAppointment.vehicleModel}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {completingAppointment.vehicleLicensePlate} • {completingAppointment.customerName}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Elvégzett munka *</Label>
+                <Input
+                  value={serviceFormData.description}
+                  onChange={(e) => setServiceFormData({ ...serviceFormData, description: e.target.value })}
+                  placeholder="pl. Olajcsere, fékbetét csere"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Km állás</Label>
+                  <Input
+                    type="number"
+                    value={serviceFormData.mileage}
+                    onChange={(e) => setServiceFormData({ ...serviceFormData, mileage: e.target.value })}
+                    placeholder="pl. 150000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Összeg (Ft)</Label>
+                  <Input
+                    type="number"
+                    value={serviceFormData.cost}
+                    onChange={(e) => setServiceFormData({ ...serviceFormData, cost: e.target.value })}
+                    placeholder="pl. 25000"
+                  />
+                </div>
+              </div>
+
+              {/* Parts section */}
+              <div className="space-y-2">
+                <Label>Beépített alkatrészek</Label>
+                {serviceFormData.parts.length > 0 && (
+                  <div className="space-y-1">
+                    {serviceFormData.parts.map((part) => (
+                      <div key={part.id} className="flex items-center justify-between p-2 bg-secondary/30 rounded text-sm">
+                        <span>{part.name} ({part.quantity} db)</span>
+                        <div className="flex items-center gap-2">
+                          {part.price && <span className="text-muted-foreground">{part.price.toLocaleString()} Ft</span>}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 text-destructive"
+                            onClick={() => handleRemovePart(part.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    value={serviceFormData.newPartName}
+                    onChange={(e) => setServiceFormData({ ...serviceFormData, newPartName: e.target.value })}
+                    placeholder="Alkatrész neve"
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    value={serviceFormData.newPartQuantity}
+                    onChange={(e) => setServiceFormData({ ...serviceFormData, newPartQuantity: e.target.value })}
+                    placeholder="db"
+                    className="w-16"
+                  />
+                  <Input
+                    type="number"
+                    value={serviceFormData.newPartPrice}
+                    onChange={(e) => setServiceFormData({ ...serviceFormData, newPartPrice: e.target.value })}
+                    placeholder="Ft"
+                    className="w-20"
+                  />
+                  <Button type="button" variant="outline" size="icon" onClick={handleAddPart}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Megjegyzés</Label>
+                <Textarea
+                  value={serviceFormData.notes}
+                  onChange={(e) => setServiceFormData({ ...serviceFormData, notes: e.target.value })}
+                  placeholder="További részletek..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => {
+                  setIsServiceDialogOpen(false);
+                  setCompletingAppointment(null);
+                  toast.success('Előjegyzés teljesítve!');
+                }}>
+                  Kihagyás
+                </Button>
+                <Button type="submit" className="flex-1">Mentés</Button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </>
