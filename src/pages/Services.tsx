@@ -231,8 +231,8 @@ export default function Services() {
                     if (!date) return <div key={`empty-${index}`} className="aspect-square" />;
 
                     const dayServices = getServicesForDate(date);
-                    const completedCount = dayServices.filter(s => s.status === 'completed').length;
-                    const hasServices = dayServices.length > 0;
+                    const serviceCount = dayServices.length;
+                    const hasServices = serviceCount > 0;
                     const isToday = date.toDateString() === new Date().toDateString();
                     const isSelected = selectedDate?.toDateString() === date.toDateString();
                     const isFuture = date > today;
@@ -258,18 +258,9 @@ export default function Services() {
                         </span>
                         {hasServices && !isFuture && (
                           <div className="flex-1 flex items-center justify-center">
-                            <div className="flex items-center gap-0.5">
-                              {completedCount > 0 && (
-                                <span className="inline-flex items-center justify-center w-5 h-5 bg-success/20 text-success rounded-full text-[10px] font-medium">
-                                  <Check className="h-3 w-3" />
-                                </span>
-                              )}
-                              {dayServices.length - completedCount > 0 && (
-                                <span className="inline-flex items-center justify-center w-5 h-5 bg-warning/20 text-warning rounded-full text-[10px] font-medium">
-                                  {dayServices.length - completedCount}
-                                </span>
-                              )}
-                            </div>
+                            <span className="inline-flex items-center justify-center w-6 h-6 bg-success/20 text-success rounded-full text-xs font-bold">
+                              {serviceCount}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -280,14 +271,10 @@ export default function Services() {
                 {/* Legend */}
                 <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 bg-success/20 rounded-full flex items-center justify-center">
-                      <Check className="h-2 w-2 text-success" />
+                    <span className="w-4 h-4 bg-success/20 rounded-full flex items-center justify-center text-[10px] font-bold text-success">
+                      3
                     </span>
-                    Kész
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 bg-warning/20 rounded-full" />
-                    Függő/Folyamat
+                    Elvégzett szervizek száma
                   </div>
                 </div>
               </CardContent>

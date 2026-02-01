@@ -67,3 +67,14 @@ export interface Appointment {
   status: 'scheduled' | 'completed' | 'cancelled';
   createdAt: string;
 }
+
+export interface Todo {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  dueTime?: string;
+  completed: boolean;
+  priority: 'low' | 'medium' | 'high';
+  createdAt: string;
+}
