@@ -132,7 +132,10 @@ export default function Dashboard() {
       <PageContainer>
         <div className="p-4 space-y-6 animate-fade-in">
           {/* Todos Widget */}
-          <Card className="bg-gradient-to-br from-primary/10 to-accent/5 border-primary/20">
+          <Card 
+            className="bg-gradient-to-br from-primary/10 to-accent/5 border-primary/20 cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => navigate('/todos')}
+          >
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -141,7 +144,12 @@ export default function Dashboard() {
                 </CardTitle>
                 <Dialog open={isAddTodoOpen} onOpenChange={setIsAddTodoOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-7 w-7 p-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>

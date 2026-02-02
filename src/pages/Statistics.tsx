@@ -345,32 +345,6 @@ export default function Statistics() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-warning/20">
-                    <Wrench className="h-5 w-5 text-warning" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Összes szerviz</p>
-                    <p className="text-lg font-bold text-warning">{stats.totalServices}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-accent/20">
-                    <Car className="h-5 w-5 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Járművek</p>
-                    <p className="text-lg font-bold text-accent">{stats.totalVehicles}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Customer Vehicle Spending Filter */}

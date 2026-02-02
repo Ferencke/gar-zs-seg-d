@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useServiceRecords } from '@/hooks/useServiceRecords';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -22,6 +22,7 @@ import { downloadWorksheetPdf, openEmailWithPdf } from '@/utils/pdfGenerator';
 
 export default function ServiceDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { serviceRecords, updateServiceRecord, deleteServiceRecord } = useServiceRecords();
   const { getVehicle } = useVehicles();
@@ -33,7 +34,10 @@ export default function ServiceDetail() {
   const vehicle = service ? getVehicle(service.vehicleId) : null;
   const customer = service ? getCustomer(service.customerId) : null;
 
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  // Check if we should open edit mode from URL param
+  const shouldOpenEdit = searchParams.get('edit') === 'true';
+
+  const [isEditOpen, setIsEditOpen] = useState(shouldOpenEdit);
   const [isPartsOpen, setIsPartsOpen] = useState(false);
   const [isWorksheetOpen, setIsWorksheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
@@ -49,6 +53,30 @@ export default function ServiceDetail() {
   });
   const [newPart, setNewPart] = useState({ name: '', partNumber: '', quantity: 1, price: undefined as number | undefined });
   const [photos, setPhotos] = useState<string[]>(service?.photos || []);
+
+  // Clear the edit param when dialog closes
+  useEffect(() => {
+    if (!isEditOpen && shouldOpenEdit) {
+      setSearchParams({});
+    }
+  }, [isEditOpen, shouldOpenEdit, setSearchParams]);
+
+  // Update editData when service changes
+  useEffect(() => {
+    if (service) {
+      setEditData({
+        description: service.description,
+        date: service.date,
+        mileage: service.mileage,
+        cost: service.cost,
+        status: service.status,
+        notes: service.notes || '',
+        laborHours: service.laborHours,
+        location: service.location || '',
+      });
+      setPhotos(service.photos || []);
+    }
+  }, [service]);
 
   if (!service) {
     return (

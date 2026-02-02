@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useVehicles } from '@/hooks/useVehicles';
@@ -23,6 +24,7 @@ import { Appointment, Part } from '@/types';
 type ViewMode = 'list' | 'month' | 'week';
 
 export default function Appointments() {
+  const navigate = useNavigate();
   const { appointments, addAppointment, updateAppointment, deleteAppointment, getUpcomingAppointments } = useAppointments();
   const { customers } = useCustomers();
   const { vehicles, getVehiclesByCustomer, getVehicle } = useVehicles();
@@ -212,20 +214,20 @@ export default function Appointments() {
     // Mark appointment as completed
     updateAppointment(appointment.id, { status: 'completed' });
     
-    // Open service dialog if vehicle is assigned
+    // If vehicle is assigned, create a new service record and navigate to edit it
     if (appointment.vehicleId) {
-      setCompletingAppointment(appointment);
-      setServiceFormData({
+      const newRecord = addServiceRecord({
+        vehicleId: appointment.vehicleId,
+        customerId: appointment.customerId,
         description: appointment.description,
-        mileage: '',
-        cost: '',
-        notes: appointment.notes || '',
-        parts: [],
-        newPartName: '',
-        newPartQuantity: '1',
-        newPartPrice: '',
+        date: new Date().toISOString().split('T')[0],
+        notes: appointment.notes || undefined,
+        status: 'in-progress',
       });
-      setIsServiceDialogOpen(true);
+      
+      toast.success('Előjegyzés teljesítve! Szerviz bejegyzés létrehozva.');
+      // Navigate to the service detail page with edit mode
+      navigate(`/services/${newRecord.id}?edit=true`);
     } else {
       toast.success('Előjegyzés teljesítve!');
     }

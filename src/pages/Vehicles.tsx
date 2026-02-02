@@ -165,17 +165,6 @@ export default function Vehicles() {
                               {vehicle.displacement && <span className="font-normal text-muted-foreground ml-1">{vehicle.displacement} cm³</span>}
                               {vehicle.year && <span className="font-normal text-muted-foreground ml-1">({vehicle.year})</span>}
                             </span>
-                            {hasExpiring && (
-                              <span className={cn(
-                                'text-xs px-1.5 py-0.5 rounded flex items-center gap-1',
-                                daysUntilExpiry !== null && daysUntilExpiry < 0 
-                                  ? 'bg-destructive/10 text-destructive' 
-                                  : 'bg-warning/10 text-warning'
-                              )}>
-                                <AlertTriangle className="h-3 w-3" />
-                                {daysUntilExpiry !== null && daysUntilExpiry < 0 ? 'Lejárt' : `${daysUntilExpiry} nap`}
-                              </span>
-                            )}
                           </div>
                           {/* Displacement and year inline with type - no icons */}
                           <div className="flex flex-wrap items-center gap-2 mt-1.5">
@@ -195,7 +184,20 @@ export default function Vehicles() {
                             </p>
                           )}
                         </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                          {hasExpiring && (
+                            <span className={cn(
+                              'text-xs px-1.5 py-0.5 rounded flex items-center gap-1',
+                              daysUntilExpiry !== null && daysUntilExpiry < 0 
+                                ? 'bg-destructive/10 text-destructive' 
+                                : 'bg-warning/10 text-warning'
+                            )}>
+                              <AlertTriangle className="h-3 w-3" />
+                              {daysUntilExpiry !== null && daysUntilExpiry < 0 ? 'Lejárt' : `${daysUntilExpiry} nap`}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
