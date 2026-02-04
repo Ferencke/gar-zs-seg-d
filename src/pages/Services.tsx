@@ -11,6 +11,7 @@ import { SearchFilter } from '@/components/SearchFilter';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChevronRight, Wrench, CalendarDays, ChevronLeft, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatDateToLocal } from '@/utils/dateUtils';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -52,7 +53,7 @@ export default function Services() {
   };
 
   const getServicesForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateToLocal(date);
     return serviceRecords.filter(s => s.date === dateStr);
   };
 

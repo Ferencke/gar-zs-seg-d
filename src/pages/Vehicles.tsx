@@ -6,7 +6,6 @@ import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SearchFilter } from '@/components/SearchFilter';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChevronRight, User, AlertTriangle, Car, Fuel, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -17,7 +16,6 @@ export default function Vehicles() {
   const [search, setSearch] = useState('');
   const [brandFilter, setBrandFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [showExpiringDialog, setShowExpiringDialog] = useState(false);
 
   // Get unique brands for filter
   const uniqueBrands = [...new Set(vehicles.map(v => v.brand))].sort();
@@ -73,7 +71,7 @@ export default function Vehicles() {
             </Card>
             <Card 
               className="bg-gradient-to-br from-warning/10 via-warning/5 to-transparent border-warning/20 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => expiringVehicles.length > 0 && setShowExpiringDialog(true)}
+              onClick={() => expiringVehicles.length > 0 && toggleStatusFilter('expiring')}
             >
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
@@ -206,73 +204,6 @@ export default function Vehicles() {
             )}
           </div>
         </div>
-
-        {/* Expiring Vehicles Dialog */}
-        <Dialog open={showExpiringDialog} onOpenChange={setShowExpiringDialog}>
-          <DialogContent className="mx-4 max-w-md max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-warning" />
-                Lejáró műszakik ({expiringVehicles.length})
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2">
-              {expiringVehicles.map((vehicle) => {
-                const customer = getCustomer(vehicle.customerId);
-                const daysUntilExpiry = Math.ceil(
-                  (new Date(vehicle.technicalInspectionDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                );
-                const isExpired = daysUntilExpiry < 0;
-
-                return (
-                  <Card 
-                    key={vehicle.id}
-                    className={cn(
-                      'cursor-pointer hover:shadow-md transition-all',
-                      isExpired 
-                        ? 'bg-gradient-to-r from-destructive/10 to-transparent border-destructive/30' 
-                        : 'bg-gradient-to-r from-warning/10 to-transparent border-warning/30'
-                    )}
-                    onClick={() => {
-                      setShowExpiringDialog(false);
-                      navigate(`/vehicles/${vehicle.id}`);
-                    }}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
-                          <p className="text-sm text-muted-foreground">{vehicle.licensePlate}</p>
-                          {customer && (
-                            <p className="text-xs text-primary mt-1">{customer.name}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <span className={cn(
-                            'text-xs px-2 py-1 rounded font-medium',
-                            isExpired 
-                              ? 'bg-destructive/20 text-destructive' 
-                              : 'bg-warning/20 text-warning'
-                          )}>
-                            {isExpired ? `${Math.abs(daysUntilExpiry)} napja lejárt` : `${daysUntilExpiry} nap`}
-                          </span>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(vehicle.technicalInspectionDate!).toLocaleDateString('hu-HU')}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-              {expiringVehicles.length === 0 && (
-                <p className="text-center text-muted-foreground py-4">
-                  Nincs lejáró műszakis jármű
-                </p>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
       </PageContainer>
     </>
   );

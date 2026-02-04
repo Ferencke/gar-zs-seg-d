@@ -15,6 +15,7 @@ import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Clock, Edit } from 'luc
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Todo } from '@/types';
+import { formatDateToLocal } from '@/utils/dateUtils';
 
 export default function Todos() {
   const { todos, addTodo, updateTodo, deleteTodo, toggleComplete, getOverdueTodos } = useTodos();
@@ -31,9 +32,9 @@ export default function Todos() {
     priority: 'medium' as 'low' | 'medium' | 'high',
   });
 
-  // Get todos for each day
+  // Get todos for each day - use local timezone
   const getTodosForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateToLocal(date);
     return todos.filter(t => t.dueDate === dateStr);
   };
 
@@ -97,7 +98,7 @@ export default function Todos() {
     if (date) {
       setTodoForm(prev => ({
         ...prev,
-        dueDate: date.toISOString().split('T')[0],
+        dueDate: formatDateToLocal(date),
       }));
     }
     setIsAddOpen(true);
