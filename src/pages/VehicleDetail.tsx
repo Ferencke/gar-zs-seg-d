@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { User, Calendar, Gauge, Plus, Trash2, Edit, Wrench, Share2, AlertTriangle, Shield, Zap, Settings } from 'lucide-react';
+import { User, Calendar, Gauge, Plus, Trash2, Edit, Wrench, Share2, AlertTriangle, Shield, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 export default function VehicleDetail() {
@@ -368,7 +368,7 @@ ${serviceHistory || 'Nincs szerviz előzmény'}
                   </div>}
                 {vehicle.ecuType && <div className="flex items-center justify-between py-1">
                     <span className="text-muted-foreground flex items-center gap-1">
-                      <Settings className="h-3 w-3" />
+                      
                       ECU
                     </span>
                     <span className="font-mono text-sm">{vehicle.ecuType}</span>
