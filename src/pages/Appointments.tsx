@@ -20,6 +20,7 @@ import { Plus, Calendar, Clock, Car, User, Trash2, Check, X, ChevronLeft, Chevro
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Appointment, Part } from '@/types';
+import { formatDateToLocal } from '@/utils/dateUtils';
 
 type ViewMode = 'list' | 'month' | 'week';
 
@@ -42,7 +43,7 @@ export default function Appointments() {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     vehicleId: '',
-    scheduledDate: new Date().toISOString().split('T')[0],
+    scheduledDate: formatDateToLocal(new Date()),
     scheduledTime: '09:00',
     description: '',
     notes: '',
@@ -115,7 +116,7 @@ export default function Appointments() {
   };
 
   const getAppointmentsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateToLocal(date);
     return appointments.filter(a => a.scheduledDate === dateStr && a.status === 'scheduled');
   };
 
@@ -136,7 +137,7 @@ export default function Appointments() {
     setSelectedCustomerId('');
     setFormData({
       vehicleId: '',
-      scheduledDate: new Date().toISOString().split('T')[0],
+      scheduledDate: formatDateToLocal(new Date()),
       scheduledTime: '09:00',
       description: '',
       notes: '',
@@ -220,7 +221,7 @@ export default function Appointments() {
         vehicleId: appointment.vehicleId,
         customerId: appointment.customerId,
         description: appointment.description,
-        date: new Date().toISOString().split('T')[0],
+        date: formatDateToLocal(new Date()),
         notes: appointment.notes || undefined,
         status: 'in-progress',
       });
@@ -404,9 +405,9 @@ export default function Appointments() {
       <div 
         onClick={() => dayAppointments.length > 0 && setSelectedDate(isSelected ? null : date)}
         className={cn(
-          'aspect-square p-1 border border-border rounded-md flex flex-col cursor-pointer transition-colors',
+          'aspect-square p-1 border border-border rounded-md flex flex-col cursor-pointer transition-all hover:scale-105',
           isToday && 'bg-primary/10 border-primary',
-          isPast && 'opacity-50',
+          isPast && !isToday && 'opacity-60',
           isSelected && 'ring-2 ring-primary',
           dayAppointments.length > 0 && 'hover:bg-secondary/50'
         )}
@@ -418,27 +419,13 @@ export default function Appointments() {
           {date.getDate()}
         </span>
         {dayAppointments.length > 0 && (
-          <div className="flex-1 overflow-hidden">
-            {isCompact ? (
-              <div className="text-xs text-center mt-1">
-                <span className="inline-flex items-center justify-center w-5 h-5 bg-primary text-primary-foreground rounded-full text-[10px]">
-                  {dayAppointments.length}
-                </span>
-              </div>
-            ) : (
-              <div className="space-y-0.5 mt-0.5">
-                {dayAppointments.slice(0, 2).map((apt) => (
-                  <div key={apt.id} className="text-[9px] bg-primary/10 text-primary px-1 rounded truncate">
-                    {apt.vehicleBrand || apt.description.slice(0, 10)}
-                  </div>
-                ))}
-                {dayAppointments.length > 2 && (
-                  <div className="text-[9px] text-muted-foreground text-center">
-                    +{dayAppointments.length - 2}
-                  </div>
-                )}
-              </div>
-            )}
+          <div className="flex-1 flex items-center justify-center">
+            <span className={cn(
+              'inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-medium',
+              'bg-primary text-primary-foreground'
+            )}>
+              {dayAppointments.length}
+            </span>
           </div>
         )}
       </div>
@@ -449,7 +436,7 @@ export default function Appointments() {
   const scheduledCount = appointments.filter(a => a.status === 'scheduled').length;
   const todayCount = appointments.filter(a => 
     a.status === 'scheduled' && 
-    a.scheduledDate === new Date().toISOString().split('T')[0]
+    a.scheduledDate === formatDateToLocal(new Date())
   ).length;
 
   return (

@@ -1,6 +1,7 @@
 import { useLocalStorage } from './useLocalStorage';
 import { Appointment } from '@/types';
 import { useCallback } from 'react';
+import { formatDateToLocal } from '@/utils/dateUtils';
 
 export function useAppointments() {
   const [appointments, setAppointments] = useLocalStorage<Appointment[]>('garage-appointments', []);
@@ -36,7 +37,7 @@ export function useAppointments() {
   }, [appointments]);
 
   const getTodayAppointments = useCallback(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateToLocal(new Date());
     return appointments
       .filter((a) => a.scheduledDate === today && a.status === 'scheduled')
       .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));

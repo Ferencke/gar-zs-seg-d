@@ -17,6 +17,7 @@ export function generateWorksheetPdf(data: PdfData): jsPDF {
   let y = 15;
   const leftMargin = 15;
   const rightMargin = pageWidth - 15;
+  const valueColumnX = rightMargin - 5; // Right-aligned column for amounts
   
   // Helper functions
   const addText = (text: string, x: number, yPos: number, options?: { fontSize?: number; fontStyle?: 'normal' | 'bold'; align?: 'left' | 'center' | 'right' }) => {
@@ -165,16 +166,21 @@ export function generateWorksheetPdf(data: PdfData): jsPDF {
     doc.rect(leftMargin, y - 4, rightMargin - leftMargin, 7, 'F');
     addText('Megnevezés', leftMargin + 2, y, { fontSize: 8, fontStyle: 'bold' });
     addText('Cikkszám', leftMargin + 70, y, { fontSize: 8, fontStyle: 'bold' });
-    addText('Menny.', leftMargin + 115, y, { fontSize: 8, fontStyle: 'bold' });
-    addText('Ár', rightMargin - 5, y, { fontSize: 8, fontStyle: 'bold', align: 'right' });
+    addText('Menny.', leftMargin + 110, y, { fontSize: 8, fontStyle: 'bold' });
+    doc.text('Ár', valueColumnX, y, { align: 'right' });
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
     y += 7;
 
     parts.forEach((part: Part) => {
       const partName = part.name.length > 35 ? part.name.substring(0, 32) + '...' : part.name;
       addText(partName, leftMargin + 2, y, { fontSize: 9 });
       addText(part.partNumber || '-', leftMargin + 70, y, { fontSize: 9 });
-      addText(part.quantity.toString(), leftMargin + 115, y, { fontSize: 9 });
-      addText(part.price ? `${(part.price * part.quantity).toLocaleString()} Ft` : '-', rightMargin - 5, y, { fontSize: 9, align: 'right' });
+      addText(part.quantity.toString(), leftMargin + 110, y, { fontSize: 9 });
+      // Right-align the price
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(part.price ? `${(part.price * part.quantity).toLocaleString()} Ft` : '-', valueColumnX, y, { align: 'right' });
       y += 6;
     });
   } else {
@@ -190,18 +196,25 @@ export function generateWorksheetPdf(data: PdfData): jsPDF {
   addLine(y - 3);
   y += 5;
 
+  // Right-aligned summary lines
   if (service.laborHours) {
-    addText(`Munkaórák: ${service.laborHours} óra`, rightMargin - 5, y, { fontSize: 10, align: 'right' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Munkaórák: ${service.laborHours} óra`, valueColumnX, y, { align: 'right' });
     y += 6;
   }
-  addText(`Alkatrészek összesen: ${partsTotal.toLocaleString()} Ft`, rightMargin - 5, y, { fontSize: 10, align: 'right' });
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Alkatrészek összesen: ${partsTotal.toLocaleString()} Ft`, valueColumnX, y, { align: 'right' });
   y += 6;
-  addText(`Munkadíj: ${laborCost.toLocaleString()} Ft`, rightMargin - 5, y, { fontSize: 10, align: 'right' });
+  doc.text(`Munkadíj: ${laborCost.toLocaleString()} Ft`, valueColumnX, y, { align: 'right' });
   y += 8;
   
   doc.setFillColor(240, 240, 240);
   doc.rect(rightMargin - 80, y - 5, 75, 10, 'F');
-  addText(`VÉGÖSSZEG: ${(service.cost || 0).toLocaleString()} Ft`, rightMargin - 5, y + 1, { fontSize: 12, fontStyle: 'bold', align: 'right' });
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`VÉGÖSSZEG: ${(service.cost || 0).toLocaleString()} Ft`, valueColumnX, y + 1, { align: 'right' });
   y += 20;
 
   // Footer
@@ -224,6 +237,37 @@ export function downloadWorksheetPdf(data: PdfData): void {
 export function getWorksheetPdfBlob(data: PdfData): Blob {
   const doc = generateWorksheetPdf(data);
   return doc.output('blob');
+}
+
+export async function sharePdfViaMessaging(data: PdfData): Promise<boolean> {
+  const { service, vehicle, customer } = data;
+  const blob = getWorksheetPdfBlob(data);
+  const fileName = `munkalap_${vehicle?.licensePlate || 'ismeretlen'}_${new Date(service.date).toISOString().split('T')[0]}.pdf`;
+  
+  // Try Web Share API with file sharing
+  if (navigator.share && navigator.canShare) {
+    const file = new File([blob], fileName, { type: 'application/pdf' });
+    const shareData = {
+      files: [file],
+      title: `Munkalap - ${vehicle?.licensePlate || ''}`,
+      text: `Munkalap a(z) ${vehicle?.brand || ''} ${vehicle?.model || ''} (${vehicle?.licensePlate || ''}) járműhöz.\nVégösszeg: ${(service.cost || 0).toLocaleString()} Ft`
+    };
+    
+    if (navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return true;
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') {
+          return false;
+        }
+      }
+    }
+  }
+  
+  // Fallback: download the file
+  downloadWorksheetPdf(data);
+  return false;
 }
 
 export function openEmailWithPdf(data: PdfData): void {

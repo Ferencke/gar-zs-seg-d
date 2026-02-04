@@ -15,10 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Car, User, Calendar, Gauge, Banknote, Trash2, Edit, FileText, Package, Share2, Printer, Clock, MapPin, Plus, Image, X, Download, Mail } from 'lucide-react';
+import { Car, User, Calendar, Gauge, Banknote, Trash2, Edit, FileText, Package, Share2, Printer, Clock, MapPin, Plus, Image, X, Download, Mail, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Part } from '@/types';
-import { downloadWorksheetPdf, openEmailWithPdf } from '@/utils/pdfGenerator';
+import { downloadWorksheetPdf, openEmailWithPdf, sharePdfViaMessaging } from '@/utils/pdfGenerator';
 
 export default function ServiceDetail() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +39,8 @@ export default function ServiceDetail() {
 
   const [isEditOpen, setIsEditOpen] = useState(shouldOpenEdit);
   const [isPartsOpen, setIsPartsOpen] = useState(false);
+  const [isEditPartOpen, setIsEditPartOpen] = useState(false);
+  const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [isWorksheetOpen, setIsWorksheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const [editData, setEditData] = useState(service || {
@@ -52,6 +54,7 @@ export default function ServiceDetail() {
     location: '',
   });
   const [newPart, setNewPart] = useState({ name: '', partNumber: '', quantity: 1, price: undefined as number | undefined });
+  const [editPartData, setEditPartData] = useState({ name: '', partNumber: '', quantity: 1, price: undefined as number | undefined });
   const [photos, setPhotos] = useState<string[]>(service?.photos || []);
 
   // Clear the edit param when dialog closes
@@ -140,6 +143,48 @@ export default function ServiceDetail() {
     const parts = (service.parts || []).filter(p => p.id !== partId);
     updateServiceRecord(id!, { parts });
     toast.success('Alkatrész törölve!');
+  };
+
+  const openEditPart = (part: Part) => {
+    setEditingPart(part);
+    setEditPartData({
+      name: part.name,
+      partNumber: part.partNumber || '',
+      quantity: part.quantity,
+      price: part.price,
+    });
+    setIsEditPartOpen(true);
+  };
+
+  const handleUpdatePart = () => {
+    if (!editingPart || !editPartData.name) {
+      toast.error('Alkatrész név kötelező!');
+      return;
+    }
+    const parts = (service.parts || []).map(p => 
+      p.id === editingPart.id 
+        ? {
+            ...p,
+            name: editPartData.name,
+            partNumber: editPartData.partNumber || undefined,
+            quantity: editPartData.quantity,
+            price: editPartData.price,
+          }
+        : p
+    );
+    updateServiceRecord(id!, { parts });
+    setIsEditPartOpen(false);
+    setEditingPart(null);
+    toast.success('Alkatrész frissítve!');
+  };
+
+  const handleSharePdfViaMessaging = async () => {
+    const shared = await sharePdfViaMessaging({ service, vehicle, customer, companySettings });
+    if (shared) {
+      toast.success('Munkalap megosztva!');
+    } else {
+      toast.success('PDF letöltve! Kézzel megoszthatod az üzenetküldő appban.');
+    }
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -527,36 +572,48 @@ ${locationDateLine}
                     </span>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mt-4">
+                <div className="space-y-2 mt-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      className="flex-1" 
+                      onClick={() => {
+                        downloadWorksheetPdf({ service, vehicle, customer, companySettings });
+                        toast.success('PDF letöltve!');
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      PDF letöltés
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1" 
+                      onClick={() => {
+                        openEmailWithPdf({ service, vehicle, customer, companySettings });
+                        toast.success('Email kliens megnyitva, PDF letöltve!');
+                      }}
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email küldés
+                    </Button>
+                  </div>
                   <Button 
-                    className="flex-1" 
-                    onClick={() => {
-                      downloadWorksheetPdf({ service, vehicle, customer, companySettings });
-                      toast.success('PDF letöltve!');
-                    }}
+                    variant="secondary" 
+                    className="w-full" 
+                    onClick={handleSharePdfViaMessaging}
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    PDF letöltés
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Megosztás (WhatsApp, Viber, Messenger, SMS)
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1" 
-                    onClick={() => {
-                      openEmailWithPdf({ service, vehicle, customer, companySettings });
-                      toast.success('Email kliens megnyitva, PDF letöltve!');
-                    }}
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Email küldés
-                  </Button>
-                  <Button variant="outline" className="flex-1" onClick={handleShareWorksheet}>
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Megosztás
-                  </Button>
-                  <Button variant="outline" className="flex-1" onClick={handlePrintWorksheet}>
-                    <Printer className="h-4 w-4 mr-2" />
-                    Nyomtatás
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" className="flex-1" onClick={handleShareWorksheet}>
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Szöveges megosztás
+                    </Button>
+                    <Button variant="outline" className="flex-1" onClick={handlePrintWorksheet}>
+                      <Printer className="h-4 w-4 mr-2" />
+                      Nyomtatás
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -876,22 +933,32 @@ ${locationDateLine}
                     <div className="space-y-2">
                       {(service.parts || []).map((part) => (
                         <div key={part.id} className="flex items-center justify-between p-2 bg-secondary/30 rounded-lg">
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openEditPart(part)}>
                             <p className="font-medium text-sm truncate">{part.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {part.partNumber && `${part.partNumber} • `}
                               {part.quantity} db
-                              {part.price && ` • ${(part.price * part.quantity).toLocaleString()} Ft`}
+                              {part.price ? ` • ${(part.price * part.quantity).toLocaleString()} Ft` : ' • nincs ár'}
                             </p>
                           </div>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 text-destructive"
-                            onClick={() => handleRemovePart(part.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => openEditPart(part)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => handleRemovePart(part.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                       <div className="pt-2 border-t border-border flex justify-between items-center">
@@ -959,6 +1026,53 @@ ${locationDateLine}
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Edit Part Dialog */}
+        <Dialog open={isEditPartOpen} onOpenChange={setIsEditPartOpen}>
+          <DialogContent className="mx-4 max-w-md">
+            <DialogHeader>
+              <DialogTitle>Alkatrész szerkesztése</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Megnevezés *</Label>
+                <Input
+                  value={editPartData.name}
+                  onChange={(e) => setEditPartData({ ...editPartData, name: e.target.value })}
+                  placeholder="Olajszűrő, fékbetét..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Cikkszám</Label>
+                <Input
+                  value={editPartData.partNumber}
+                  onChange={(e) => setEditPartData({ ...editPartData, partNumber: e.target.value })}
+                  placeholder="OE szám..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Mennyiség</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editPartData.quantity}
+                    onChange={(e) => setEditPartData({ ...editPartData, quantity: parseInt(e.target.value) || 1 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Egységár (Ft)</Label>
+                  <Input
+                    type="number"
+                    value={editPartData.price || ''}
+                    onChange={(e) => setEditPartData({ ...editPartData, price: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  />
+                </div>
+              </div>
+              <Button className="w-full" onClick={handleUpdatePart}>Mentés</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </PageContainer>
     </>
   );
