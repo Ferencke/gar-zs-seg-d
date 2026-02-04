@@ -390,7 +390,7 @@ ${serviceHistory || 'Nincs szerviz előzmény'}
                   </div>}
                 {vehicle.technicalInspectionDate && <div className="flex items-center justify-between py-1">
                     <span className="text-muted-foreground flex items-center gap-1">
-                      <Shield className="h-3 w-3" />
+                      
                       Műszaki érvényes
                     </span>
                     <span className={cn(inspectionStatus?.type === 'expired' && 'text-destructive', inspectionStatus?.type === 'warning' && 'text-warning')}>
