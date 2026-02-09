@@ -95,13 +95,13 @@ export default function Vehicles() {
             filters={[
               {
                 label: 'Márka',
-                options: uniqueBrands.slice(0, 4).map(brand => ({
+                options: uniqueBrands.map(brand => ({
                   id: brand,
                   label: brand
                 })),
                 selected: brandFilter,
                 onToggle: toggleBrandFilter
-              }, 
+              },
               {
                 label: 'Státusz',
                 options: [

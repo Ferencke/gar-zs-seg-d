@@ -296,6 +296,16 @@ ${locationDateLine}
   };
 
   const handlePrintWorksheet = () => {
+    // On mobile/Capacitor, use PDF download + share instead of print window
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // For mobile, download PDF and let user share/print
+      downloadWorksheetPdf({ service, vehicle, customer, companySettings });
+      toast.success('PDF letöltve! A letöltések mappában találod.');
+      return;
+    }
+    
     const printContent = worksheetRef.current;
     if (!printContent) return;
 
@@ -325,7 +335,12 @@ ${locationDateLine}
     ].filter(Boolean).join(' • ');
 
     const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    if (!printWindow) {
+      // Fallback to PDF download if popup blocked
+      downloadWorksheetPdf({ service, vehicle, customer, companySettings });
+      toast.success('PDF letöltve!');
+      return;
+    }
 
     printWindow.document.write(`
       <html>
@@ -395,17 +410,17 @@ ${locationDateLine}
                   <tr>
                     <th>Megnevezés</th>
                     <th>Cikkszám</th>
-                    <th>Mennyiség</th>
-                    <th>Ár</th>
+                    <th>Menny.</th>
+                    <th style="text-align: right;">Ár</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${(service.parts || []).map(p => `
+                  ${(service.parts || []).map((p: Part) => `
                     <tr>
                       <td>${p.name}</td>
                       <td>${p.partNumber || '-'}</td>
                       <td>${p.quantity}</td>
-                      <td>${p.price ? `${(p.price * p.quantity).toLocaleString()} Ft` : '-'}</td>
+                      <td style="text-align: right;">${p.price ? `${(p.price * p.quantity).toLocaleString()} Ft` : '-'}</td>
                     </tr>
                   `).join('')}
                 </tbody>
@@ -414,8 +429,8 @@ ${locationDateLine}
           </div>
           
           <div class="total">
-            ${service.laborHours ? `<div>Munkaórák: ${service.laborHours} óra</div>` : ''}
-            <div>VÉGÖSSZEG: ${(service.cost || 0).toLocaleString()} Ft</div>
+            ${service.laborHours ? `<p style="font-size: 14px; font-weight: normal;">Munkaórák: ${service.laborHours} óra</p>` : ''}
+            <p>VÉGÖSSZEG: ${(service.cost || 0).toLocaleString()} Ft</p>
           </div>
           
           <div class="footer">
@@ -425,7 +440,22 @@ ${locationDateLine}
       </html>
     `);
     printWindow.document.close();
-    printWindow.print();
+    
+    // Wait for content to load before printing
+    printWindow.onload = () => {
+      printWindow.print();
+      printWindow.close();
+    };
+    
+    // Fallback timeout for print
+    setTimeout(() => {
+      try {
+        printWindow.print();
+        printWindow.close();
+      } catch (e) {
+        // Window might already be closed
+      }
+    }, 500);
   };
 
   const partsTotal = (service.parts || []).reduce((sum, p) => sum + (p.price || 0) * p.quantity, 0);
@@ -902,10 +932,21 @@ ${locationDateLine}
                             <div className="space-y-2">
                               <Label>Mennyiség</Label>
                               <Input
-                                type="number"
-                                min="1"
-                                value={newPart.quantity}
-                                onChange={(e) => setNewPart({ ...newPart, quantity: parseInt(e.target.value) || 1 })}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={newPart.quantity === 0 ? '' : newPart.quantity.toString()}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === '' || /^\d+$/.test(val)) {
+                                    setNewPart({ ...newPart, quantity: val === '' ? 0 : parseInt(val) });
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                                    setNewPart({ ...newPart, quantity: 1 });
+                                  }
+                                }}
                               />
                             </div>
                             <div className="space-y-2">
@@ -1054,10 +1095,21 @@ ${locationDateLine}
                 <div className="space-y-2">
                   <Label>Mennyiség</Label>
                   <Input
-                    type="number"
-                    min="1"
-                    value={editPartData.quantity}
-                    onChange={(e) => setEditPartData({ ...editPartData, quantity: parseInt(e.target.value) || 1 })}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={editPartData.quantity === 0 ? '' : editPartData.quantity.toString()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d+$/.test(val)) {
+                        setEditPartData({ ...editPartData, quantity: val === '' ? 0 : parseInt(val) });
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                        setEditPartData({ ...editPartData, quantity: 1 });
+                      }
+                    }}
                   />
                 </div>
                 <div className="space-y-2">

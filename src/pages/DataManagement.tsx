@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Download, Upload, AlertTriangle, Building2, ChevronRight, Cloud, CloudOff, Settings, Check, Loader2, RefreshCw } from 'lucide-react';
+import { Download, Upload, AlertTriangle, Building2, ChevronRight, Cloud, CloudOff, Settings, Check, Loader2, RefreshCw, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExportData {
@@ -56,6 +56,7 @@ export default function DataManagement() {
   const [tempFolderId, setTempFolderId] = useState(driveSettings.folderId);
   const [tempServiceKey, setTempServiceKey] = useState(driveSettings.serviceAccountKeyJson);
   const [connectionTested, setConnectionTested] = useState(false);
+  const serviceKeyFileRef = useRef<HTMLInputElement>(null);
 
   const getExportData = (): ExportData => ({
     version: '1.0',
@@ -151,6 +152,30 @@ export default function DataManagement() {
     setConnectionTested(false);
     toast.success('Beállítások mentve!');
     setShowDriveConfig(false);
+  };
+
+  const handleServiceKeyFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        // Validate it's valid JSON
+        JSON.parse(content);
+        setTempServiceKey(content);
+        toast.success('JSON kulcs betöltve!');
+      } catch (error) {
+        toast.error('Érvénytelen JSON fájl!');
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset input
+    if (serviceKeyFileRef.current) {
+      serviceKeyFileRef.current.value = '';
+    }
   };
 
   const handleTestConnection = async () => {
@@ -361,6 +386,28 @@ export default function DataManagement() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="serviceKey">Service Account kulcs (JSON)</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => serviceKeyFileRef.current?.click()}
+                      className="shrink-0"
+                    >
+                      <FileUp className="h-4 w-4 mr-2" />
+                      Tallózás
+                    </Button>
+                    <input
+                      ref={serviceKeyFileRef}
+                      type="file"
+                      accept=".json,application/json"
+                      className="hidden"
+                      onChange={handleServiceKeyFileUpload}
+                    />
+                    <p className="text-xs text-muted-foreground self-center">
+                      Vagy másold be alább
+                    </p>
+                  </div>
                   <Textarea
                     id="serviceKey"
                     placeholder='{"type": "service_account", ...}'

@@ -231,7 +231,19 @@ export function generateWorksheetPdf(data: PdfData): jsPDF {
 export function downloadWorksheetPdf(data: PdfData): void {
   const doc = generateWorksheetPdf(data);
   const fileName = `munkalap_${data.vehicle?.licensePlate || 'ismeretlen'}_${new Date(data.service.date).toISOString().split('T')[0]}.pdf`;
-  doc.save(fileName);
+  
+  // Use blob URL for better mobile compatibility
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Cleanup after a short delay
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function getWorksheetPdfBlob(data: PdfData): Blob {
