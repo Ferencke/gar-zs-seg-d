@@ -34,14 +34,24 @@ export function BottomNav() {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors',
+                'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all relative',
                 isActive
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              {/* Active indicator bar */}
+              {isActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-b-full" />
+              )}
+              <item.icon className={cn(
+                'h-5 w-5 transition-transform',
+                isActive && 'scale-110'
+              )} strokeWidth={isActive ? 2.5 : 2} />
+              <span className={cn(
+                'text-[10px] transition-all',
+                isActive ? 'font-bold' : 'font-medium'
+              )}>{item.label}</span>
             </button>
           );
         })}
@@ -50,14 +60,24 @@ export function BottomNav() {
           <SheetTrigger asChild>
             <button
               className={cn(
-                'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors',
+                'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all relative',
                 isMoreActive
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <MoreHorizontal className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Több</span>
+              {/* Active indicator bar */}
+              {isMoreActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-b-full" />
+              )}
+              <MoreHorizontal className={cn(
+                'h-5 w-5 transition-transform',
+                isMoreActive && 'scale-110'
+              )} strokeWidth={isMoreActive ? 2.5 : 2} />
+              <span className={cn(
+                'text-[10px] transition-all',
+                isMoreActive ? 'font-bold' : 'font-medium'
+              )}>Több</span>
             </button>
           </SheetTrigger>
           <SheetContent side="bottom" className="pb-safe">
