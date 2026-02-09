@@ -17,8 +17,8 @@ export default function Vehicles() {
   const [brandFilter, setBrandFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
 
-  // Get unique brands for filter
-  const uniqueBrands = [...new Set(vehicles.map(v => v.brand))].sort();
+  // Get unique brands for filter - filter out empty/null values and deduplicate
+  const uniqueBrands = [...new Set(vehicles.map(v => v.brand).filter(brand => brand && brand.trim() !== ''))].sort();
   
   const filteredVehicles = vehicles.filter(vehicle => {
     const matchesSearch = vehicle.licensePlate.toLowerCase().includes(search.toLowerCase()) || 
